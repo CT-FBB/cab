@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Equipment Catalog — รายการอุปกรณ์โทรคมนาคมทั้งหมด" />
+  <title>อุปกรณ์ — Cabinet Equipment Manager</title>
+  <link rel="stylesheet" href="../assets/css/style.css" />
+</head>
+<body>
+
+<!-- ══════════════════════ NAVBAR ══════════════════════ -->
+<nav class="nav" id="mainNav">
+  <div class="container nav__inner">
+    <a href="../index.html" class="nav__logo">
+      <span class="nav__logo-icon">🗄️</span> Cabinet
+    </a>
+    <ul class="nav__links">
+      <li><a href="../index.html"         class="nav__link">หน้าแรก</a></li>
+      <li><a href="equipment.html"        class="nav__link active">อุปกรณ์</a></li>
+      <li><a href="cabinet-detail.html"   class="nav__link">Cabinet</a></li>
+      <li><a href="../index.html#categories" class="nav__link">หมวดหมู่</a></li>
+    </ul>
+    <div class="nav__actions">
+      <button class="nav__btn" id="searchOpen" title="ค้นหา">🔍</button>
+      <button class="nav__btn" id="darkToggle" title="สลับธีม">🌙</button>
+    </div>
+  </div>
+</nav>
+
+<!-- ══════════════════════ SEARCH OVERLAY ══════════════════════ -->
+<div class="search-overlay" id="searchOverlay">
+  <div class="search-box">
+    <div class="search-input-wrap">
+      <span>🔍</span>
+      <input type="text" class="search-input" id="searchInput" placeholder="ค้นหาอุปกรณ์..." autocomplete="off" />
+      <button id="searchClose" style="background:none;border:none;color:var(--text-secondary);font-size:1rem;cursor:pointer;">✕</button>
+    </div>
+    <div class="search-results" id="searchResults"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════ PAGE HEADER ══════════════════════ -->
+<div class="page-header">
+  <div class="container">
+    <div class="breadcrumb">
+      <a href="../index.html">หน้าแรก</a>
+      <span>/</span>
+      <span>อุปกรณ์</span>
+    </div>
+    <h1>คลังอุปกรณ์</h1>
+    <p>รายการอุปกรณ์โทรคมนาคมทั้งหมด — OLT, CPE, NodeB, IPRAN, Switch, Power</p>
+  </div>
+</div>
+
+<!-- ══════════════════════ EQUIPMENT CATALOG ══════════════════════ -->
+<section class="section section--sm">
+  <div class="container">
+
+    <!-- Search Bar -->
+    <div class="search-bar-wrap">
+      <span class="icon">🔍</span>
+      <input type="text" class="search-bar-input" id="equipSearch" placeholder="ค้นหา รุ่น, ผู้ผลิต, ประเภท..." />
+    </div>
+
+    <!-- Filter Chips + Sort -->
+    <div class="filter-bar">
+      <button class="filter-chip active" data-filter="all">ทั้งหมด</button>
+      <button class="filter-chip" data-filter="olt">🌐 OLT</button>
+      <button class="filter-chip" data-filter="cpe">📡 CPE / ONT</button>
+      <button class="filter-chip" data-filter="nodeb">📶 NodeB</button>
+      <button class="filter-chip" data-filter="ipran">🔄 IPRAN</button>
+      <button class="filter-chip" data-filter="switch">🔀 Switch</button>
+      <button class="filter-chip" data-filter="power">🔋 Power</button>
+      <select class="sort-select" id="sortSelect">
+        <option value="model">เรียงตาม: รุ่น</option>
+        <option value="vendor">เรียงตาม: ผู้ผลิต</option>
+        <option value="category">เรียงตาม: ประเภท</option>
+        <option value="status">เรียงตาม: สถานะ</option>
+      </select>
+    </div>
+
+    <!-- Equipment Grid -->
+    <div class="equipment-grid" id="equipGrid">
+
+      <!-- ── OLT ── -->
+      <div class="equipment-card" data-category="olt" data-model="Huawei MA5800-X17" data-vendor="Huawei" data-status="active">
+        <div class="equipment-card__icon">🌐</div>
+        <div class="equipment-card__vendor">Huawei</div>
+        <div class="equipment-card__model">MA5800-X17</div>
+        <div class="equipment-card__spec">16 PON Slots · 512 Ports · XGS-PON</div>
+        <div class="equipment-card__spec" style="margin-top:2px">Bandwidth: 160 Gbps</div>
+        <div class="equipment-card__footer">
+          <span class="badge badge--olt badge--cat">OLT</span>
+          <span class="badge badge--active">Active</span>
+        </div>
+      </div>
+
+      <div class="equipment-card" data-category="olt" data-model="Huawei MA5683T" data-vendor="Huawei" data-status="active">
+        <div class="equipment-card__icon">🌐</div>
+        <div class="equipment-card__vendor">Huawei</div>
+        <div class="equipment-card__model">MA5683T</div>
+        <div class="equipment-card__spec">14 PON Slots · 448 Ports · GPON</div>
+        <div class="equipment-card__spec" style="margin-top:2px">Bandwidth: 56 Gbps</div>
+        <div class="equipment-card__footer">
+          <span class="badge badge--olt badge--cat">OLT</span>
+          <span class="badge badge--active">Active</span>
+        </div>
+      </div>
+
+      <div class="equipment-card" data-category="olt" data-model="ZTE C610" data-vendor="ZTE" data-status="active">
+        <div class="equipment-card__icon" style="overflow:hidden;border-radius:6px;">
+          <img src="../assets/img/zte_c610_front_panel.png" style="width:100%;height:32px;object-fit:cover;" alt="ZTE C610" />
+        </div>
+        <div class="equipment-card__vendor">ZTE</div>
+        <div class="equipment-card__model">ZXA10 C610 (1U Pizza-box)</div>
+        <div class="equipment-card__spec">16× Any-PON/XGS-PON · 4× 10GE Uplink</div>
+        <div class="equipment-card__spec" style="margin-top:2px">1U 43.6mm · Dual DC Power · High Density</div>
+        <div class="equipment-card__footer">
+          <span class="badge badge--olt badge--cat">OLT</span>
+          <span class="badge badge--active">Active</span>
+        </div>
+      </div>
+
+      <div class="equipment-card" data-category="olt" data-model="ZTE C320" data-vendor="ZTE" data-status="active">
+        <div class="equipment-card__icon">🌐</div>
+        <div class="equipment-card__vendor">ZTE</div>
+        <div class="equipment-card__model">C320</div>
+        <div class="equipment-card__spec">8 PON Slots · 256 Ports · GPON</div>
+        <div class="equipment-card__spec" style="margin-top:2px">Bandwidth: 20 Gbps</div>
+        <div class="equipment-card__footer">
+          <span class="badge badge--olt badge--cat">OLT</span>
+          <span class="badge badge--active">Active</span>
+        </div>
+      </div>
+
+      <div class="equipment-card" data-category="olt" data-model="ZTE C600" data-vendor="ZTE" data-status="maintenance">
+        <div class="equipment-card__icon">🌐</div>
+        <div class="equipment-card__vendor">ZTE</div>
+        <div class="equipment-card__model">C600</div>
+        <div class="equipment-card__spec">16 PON Slots · 512 Ports · XGS-PON</div>
+        <div class="equipment-card__spec" style="margin-top:2px">Bandwidth: 100 Gbps</div>
+        <div class="equipment-card__footer">
+          <span class="badge badge--olt badge--cat">OLT</span>
+          <span class="badge badge--maintenance">Maintenance</span>
+        </div>
+      </div>
+
+      <div class="equipment-card" data-category="olt" data-model="Fiberhome AN5516-06" data-vendor="Fiberhome" data-status="active">
+        <div class="equipment-card__icon">🌐</div>
+        <div class="equipment-card__vendor">Fiberhome</div>
+        <div class="equipment-card__model">AN5516-06</div>
+        <div class="equipment-card__spec">6 PON Slots · 192 Ports · GPON</div>
+        <div class="equipment-card__spec" style="margin-top:2px">Bandwidth: 40 Gbps</div>
+        <div class="equipment-card__footer">
+          <span class="badge badge--olt badge--cat">OLT</span>
+          <span class="badge badge--active">Active</span>
+        </div>
+      </div>
+
+      <div class="equipment-card" data-category="olt" data-model="GCOM G3608" data-vendor="GCOM" data-status="active">
+        <div class="equipment-card__icon">🌐</div>
+        <div class="equipment-card__vendor">GCOM</div>
+        <div class="equipment-card__model">G3608</div>
+        <div class="equipment-card__spec">8 PON Slots · 256 Ports · GPON</div>
+        <div class="equipment-card__spec" style="margin-top:2px">Bandwidth: 25 Gbps</div>
+        <div class="equipment-card__footer">
+          <span class="badge badge--olt badge--cat">OLT</span>
+          <span class="badge badge--active">Active</span>
+        </div>
+      </div>
+
+      <div class="equipment-card" data-category="olt" data-model="Dasan V5812G" data-vendor="Dasan" data-status="inactive">
+        <div class="equipment-card__icon">🌐</div>
+        <div class="equipment-card__vendor">Dasan</div>
+        <div class="equipment-card__model">V5812G</div>
+        <div class="equipment-card__spec">12 PON Slots · 384 Ports · GPON</div>
+        <div class="equipment-card__spec" style="margin-top:2px">Bandwidth: 48 Gbps</div>
+        <div class="equipment-card__footer">
+          <span class="badge badge--olt badge--cat">OLT</span>
+          <span class="badge badge--inactive">Inactive</span>
+        </div>
+      </div>
+
+      <!-- ── CPE / ONT ── -->
+      <div class="equipment-card" data-category="cpe" data-model="Huawei EchoLife HG8245H" data-vendor="Huawei" data-status="active">
+        <div class="equipment-card__icon">📡</div>
+        <div class="equipment-card__vendor">Huawei</div>
+        <div class="equipment-card__model">EchoLife HG8245H</div>
+        <div class="equipment-card__spec">4x GE LAN · 2x POTS · Wi-Fi 5</div>
+        <div class="equipment-card__spec" style="margin-top:2px">GPON · 2.4/5 GHz</div>
+        <div class="equipment-card__footer">
+          <span class="badge badge--cpe badge--cat">CPE</span>
+          <span class="badge badge--active">Active</span>
+        </div>
+      </div>
+
+      <div class="equipment-card" data-category="cpe" data-model="Huawei F688" data-vendor="Huawei" data-status="active">
+        <div class="equipment-card__icon">📡</div>
+        <div class="equipment-card__vendor">Huawei</div>
+        <div class="equipment-card__model">F688</div>
+        <div class="equipment-card__spec">4x GE LAN · Wi-Fi 6 · XGS-PON</div>
+        <div class="equipment-card__spec" style="margin-top:2px">10G Uplink · 4x4 MIMO</div>
+        <div class="equipment-card__footer">
+          <span class="badge badge--cpe badge--cat">CPE</span>
+          <span class="badge badge--active">Active</span>
+        </div>
+      </div>
+
+      <div class="equipment-card" data-category="cpe" data-model="ZTE F623" data-vendor="ZTE" data-status="active">
+        <div class="equipment-card__icon">📡</div>
+        <div class="equipment-card__vendor">ZTE</div>
+        <div class="equipment-card__model">F623</div>
+        <div class="equipment-card__spec">4x FE LAN · 1x POTS · GPON</div>
+        <div class="equipment-card__spec" style="margin-top:2px">1G Uplink</div>
+        <div class="equipment-card__footer">
+          <span class="badge badge--cpe badge--cat">CPE</span>
+          <span class="badge badge--active">Active</span>
+        </div>
+      </div>
+
+      <div class="equipment-card" data-category="cpe" data-model="ZTE F680" data-vendor="ZTE" data-status="active">
+        <div class="equipment-card__icon">📡</div>
+        <div class="equipment-card__vendor">ZTE</div>
+        <div class="equipment-card__model">F680</div>
+        <div class="equipment-card__spec">4x GE LAN · Wi-Fi 5 · GPON</div>
+        <div class="equipment-card__spec" style="margin-top:2px">AC1200 Dual Band</div>
+        <div class="equipment-card__footer">
+          <span class="badge badge--cpe badge--cat">CPE</span>
+          <span class="badge badge--active">Active</span>
+        </div>
+      </div>
+
+      <div class="equipment-card" data-category="cpe" data-model="T626ProV2" data-vendor="True" data-status="active">
+        <div class="equipment-card__icon">📡</div>
+        <div class="equipment-card__vendor">True / OEM</div>
+        <div class="equipment-card__model">T626ProV2</div>
+        <div class="equipment-card__spec">4x GE LAN · Wi-Fi 6 · GPON</div>
+        <div class="equipment-card__spec" style="margin-top:2px">AX3000 Dual Band</div>
+        <div class="equipment-card__footer">
+          <span class="badge badge--cpe badge--cat">CPE</span>
+          <span class="badge badge--active">Active</span>
+        </div>
+      </div>
+
+      <div class="equipment-card" data-category="cpe" data-model="GN542VF" data-vendor="Genexis" data-status="maintenance">
+        <div class="equipment-card__icon">📡</div>
+        <div class="equipment-card__vendor">Genexis</div>
+        <div class="equipment-card__model">GN542VF</div>
+        <div class="equipment-card__spec">4x GE LAN · 2x POTS · Wi-Fi 5</div>
+        <div class="equipment-card__spec" style="margin-top:2px">GPON · VoIP</div>
+        <div class="equipment-card__footer">
+          <span class="badge badge--cpe badge--cat">CPE</span>
+          <span class="badge badge--maintenance">Maintenance</span>
+        </div>
+      </div>
+
+      <!-- ── NodeB ── -->
+      <div class="equipment-card" data-category="nodeb" data-model="Huawei BBU5900" data-vendor="Huawei" data-status="active">
+        <div class="equipment-card__icon">📶</div>
+        <div class="equipment-card__vendor">Huawei</div>
+        <div class="equipment-card__model">BBU5900</div>
+        <div class="equipment-card__spec">5G NR BBU · 6 RRU Ports</div>
+        <div class="equipment-card__spec" style="margin-top:2px">Sub-6GHz / mmWave</div>
+        <div class="equipment-card__footer">
+          <span class="badge badge--nodeb badge--cat">NodeB</span>
+          <span class="badge badge--active">Active</span>
+        </div>
+      </div>
+
+      <div class="equipment-card" data-category="nodeb" data-model="Nokia gNodeB AirScale" data-vendor="Nokia" data-status="active">
+        <div class="equipment-card__icon">📶</div>
+        <div class="equipment-card__vendor">Nokia</div>
+        <div class="equipment-card__model">gNodeB AirScale</div>
+        <div class="equipment-card__spec">5G NR · Massive MIMO</div>
+        <div class="equipment-card__spec" style="margin-top:2px">n77/n78/n28 Bands</div>
+        <div class="equipment-card__footer">
+          <span class="badge badge--nodeb badge--cat">NodeB</span>
+          <span class="badge badge--active">Active</span>
+        </div>
+      </div>
+
+      <!-- ── IPRAN ── -->
+      <div class="equipment-card" data-category="ipran" data-model="Huawei CX600-X8" data-vendor="Huawei" data-status="active">
+        <div class="equipment-card__icon">🔄</div>
+        <div class="equipment-card__vendor">Huawei</div>
+        <div class="equipment-card__model">CX600-X8</div>
+        <div class="equipment-card__spec">8-Slot Chassis · 400G Uplink</div>
+        <div class="equipment-card__spec" style="margin-top:2px">MPLS / SR · EVPN</div>
+        <div class="equipment-card__footer">
+          <span class="badge badge--ipran badge--cat">IPRAN</span>
+          <span class="badge badge--active">Active</span>
+        </div>
+      </div>
+
+      <div class="equipment-card" data-category="ipran" data-model="Cisco ASR9000" data-vendor="Cisco" data-status="active">
+        <div class="equipment-card__icon">🔄</div>
+        <div class="equipment-card__vendor">Cisco</div>
+        <div class="equipment-card__model">ASR 9001</div>
+        <div class="equipment-card__spec">Fixed Chassis · 100G Uplink</div>
+        <div class="equipment-card__spec" style="margin-top:2px">IOS-XR · Segment Routing</div>
+        <div class="equipment-card__footer">
+          <span class="badge badge--ipran badge--cat">IPRAN</span>
+          <span class="badge badge--active">Active</span>
+        </div>
+      </div>
+
+      <!-- ── Switch ── -->
+      <div class="equipment-card" data-category="switch" data-model="Cisco Catalyst 9300" data-vendor="Cisco" data-status="active">
+        <div class="equipment-card__icon">🔀</div>
+        <div class="equipment-card__vendor">Cisco</div>
+        <div class="equipment-card__model">Catalyst 9300-48P</div>
+        <div class="equipment-card__spec">48x GE PoE+ · 4x 25G Uplink</div>
+        <div class="equipment-card__spec" style="margin-top:2px">IOS-XE · SD-Access</div>
+        <div class="equipment-card__footer">
+          <span class="badge badge--switch badge--cat">Switch</span>
+          <span class="badge badge--active">Active</span>
+        </div>
+      </div>
+
+      <div class="equipment-card" data-category="switch" data-model="Huawei S5735-L48T4X" data-vendor="Huawei" data-status="active">
+        <div class="equipment-card__icon">🔀</div>
+        <div class="equipment-card__vendor">Huawei</div>
+        <div class="equipment-card__model">S5735-L48T4X</div>
+        <div class="equipment-card__spec">48x GE · 4x 10G Uplink</div>
+        <div class="equipment-card__spec" style="margin-top:2px">VRP · iStack</div>
+        <div class="equipment-card__footer">
+          <span class="badge badge--switch badge--cat">Switch</span>
+          <span class="badge badge--active">Active</span>
+        </div>
+      </div>
+
+      <!-- ── Power & Optical Amplifiers ── -->
+      <div class="equipment-card" data-category="power" data-model="MOSSMAN EDFA ML-OAH219SCL-D2FN" data-vendor="MOSSMAN" data-status="active">
+        <div class="equipment-card__icon" style="overflow:hidden;border-radius:6px;">
+          <img src="../assets/img/edfa_mossman_ml_oah_front_panel.png" style="width:100%;height:32px;object-fit:cover;" alt="MOSSMAN EDFA" />
+        </div>
+        <div class="equipment-card__vendor">MOSSMAN</div>
+        <div class="equipment-card__model">ML-OAH219SCL-D2FN</div>
+        <div class="equipment-card__spec">1550nm EDFA · Built-in WDM + Optical Switch</div>
+        <div class="equipment-card__spec" style="margin-top:2px">19dBm/Port · Dual -48VDC Front Power · 1U</div>
+        <div class="equipment-card__footer">
+          <span class="badge badge--power badge--cat">EDFA / Optical</span>
+          <span class="badge badge--active">Active</span>
+        </div>
+      </div>
+
+      <div class="equipment-card" data-category="power" data-model="Copper Ground Busbar" data-vendor="True Online" data-status="active">
+        <div class="equipment-card__icon">⏚</div>
+        <div class="equipment-card__vendor">True Online / Standard</div>
+        <div class="equipment-card__model">Copper Ground Bar (25×5mm)</div>
+        <div class="equipment-card__spec">Solid Electrolytic Copper (Cu-ETP ≥99.9%) · 460mm</div>
+        <div class="equipment-card__spec" style="margin-top:2px">Red Standoff Isolators 1kV · 10× M6 Studs · PE Wires</div>
+        <div class="equipment-card__footer">
+          <span class="badge badge--power badge--cat">Grounding / Earthing</span>
+          <span class="badge badge--active">Active</span>
+        </div>
+      </div>
+
+      <div class="equipment-card" data-category="power" data-model="DC-PDB 2U Distribution" data-vendor="True / Nader" data-status="active">
+        <div class="equipment-card__icon">⚡</div>
+        <div class="equipment-card__vendor">True Online / Nader</div>
+        <div class="equipment-card__model">DC-PDB 2U Subrack</div>
+        <div class="equipment-card__spec">2U 19" Rackmount · Dual 125A Battery MCBs</div>
+        <div class="equipment-card__spec" style="margin-top:2px">14× DC MCBs + 2× SPDs + AC Utility Socket · -48V DC</div>
+        <div class="equipment-card__footer">
+          <span class="badge badge--power badge--cat">DC-PDB / Power</span>
+          <span class="badge badge--active">Active</span>
+        </div>
+      </div>
+
+      <div class="equipment-card" data-category="power" data-model="Huawei ETP4830-A1" data-vendor="Huawei" data-status="active">
+        <div class="equipment-card__icon">⚡</div>
+        <div class="equipment-card__vendor">Huawei</div>
+        <div class="equipment-card__model">ETP4830-A1 (1U)</div>
+        <div class="equipment-card__spec">1U Embedded DC Power · 2000W / 30A @ -48V DC</div>
+        <div class="equipment-card__spec" style="margin-top:2px">2× R4815 Rectifiers + SMU Controller · 19" Rack</div>
+        <div class="equipment-card__footer">
+          <span class="badge badge--power badge--cat">Rectifier / Power</span>
+          <span class="badge badge--active">Active</span>
+        </div>
+      </div>
+
+      <div class="equipment-card" data-category="power" data-model="Megmeet EMC2250" data-vendor="Megmeet" data-status="active">
+        <div class="equipment-card__icon">🔋</div>
+        <div class="equipment-card__vendor">Megmeet</div>
+        <div class="equipment-card__model">EMC2250 Rectifier</div>
+        <div class="equipment-card__spec">2250W · 53.5V DC Output</div>
+        <div class="equipment-card__spec" style="margin-top:2px">High Efficiency &gt;96%</div>
+        <div class="equipment-card__footer">
+          <span class="badge badge--power badge--cat">Power</span>
+          <span class="badge badge--active">Active</span>
+        </div>
+      </div>
+
+      <div class="equipment-card" data-category="power" data-model="Emerson NetSure 731" data-vendor="Emerson" data-status="active">
+        <div class="equipment-card__icon">🔋</div>
+        <div class="equipment-card__vendor">Emerson</div>
+        <div class="equipment-card__model">NetSure 731 A41</div>
+        <div class="equipment-card__spec">48V DC · 200A Output</div>
+        <div class="equipment-card__spec" style="margin-top:2px">Battery: 2 × 100Ah</div>
+        <div class="equipment-card__footer">
+          <span class="badge badge--power badge--cat">Power</span>
+          <span class="badge badge--active">Active</span>
+        </div>
+      </div>
+
+      <div class="equipment-card" data-category="power" data-model="Dong-ah UPS 10KVA" data-vendor="Dong-ah" data-status="maintenance">
+        <div class="equipment-card__icon">🔋</div>
+        <div class="equipment-card__vendor">Dong-ah</div>
+        <div class="equipment-card__model">UPS 10KVA Online</div>
+        <div class="equipment-card__spec">10 KVA · 9 kW · Online</div>
+        <div class="equipment-card__spec" style="margin-top:2px">Double Conversion · LCD</div>
+        <div class="equipment-card__footer">
+          <span class="badge badge--power badge--cat">Power</span>
+          <span class="badge badge--maintenance">Maintenance</span>
+        </div>
+      </div>
+
+    </div><!-- /equipGrid -->
+
+    <!-- No Results -->
+    <div class="no-results" id="noResults">
+      <div class="icon">🔎</div>
+      <h3 style="color:var(--text-secondary)">ไม่พบอุปกรณ์</h3>
+      <p>ลองเปลี่ยนคำค้นหาหรือตัวกรอง</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════════════ FOOTER ══════════════════════ -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-bottom">
+      <div>Copyright © 2026 Cabinet Equipment Manager</div>
+      <a href="../index.html" style="color:var(--text-tertiary)">← กลับหน้าแรก</a>
+    </div>
+  </div>
+</footer>
+
+<script src="../assets/js/app.js"></script>
+<script>
+  // Auto-apply URL filter param
+  (function() {
+    const p = new URLSearchParams(window.location.search).get('filter');
+    if (!p) return;
+    const chip = document.querySelector(`.filter-chip[data-filter="${p}"]`);
+    if (chip) chip.click();
+  })();
+</script>
+</body>
+</html>

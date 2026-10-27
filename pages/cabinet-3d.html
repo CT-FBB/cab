@@ -1,0 +1,2799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TPC05-SP-OLT9U — 3D Cabinet Viewer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --panel-bg: #1c1c2e;
+      --panel-border: rgba(255,255,255,0.08);
+      --accent: #0071e3;
+      --accent-hover: #0085f2;
+      --text: #f0f0f5;
+      --text-sec: #8e8ea0;
+      --text-ter: #555568;
+      --card-bg: rgba(255,255,255,0.04);
+      --card-border: rgba(255,255,255,0.07);
+      --radius: 12px;
+      --radius-sm: 8px;
+      --font: -apple-system, "SF Pro Display", "Segoe UI", Helvetica, Arial, sans-serif;
+    }
+
+    html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg); font-family: var(--font); color: var(--text); }
+
+    /* ── Layout ── */
+    #app { display: flex; width: 100%; height: 100%; }
+
+    /* ── Left Panel ── */
+    #panel {
+      width: 280px; min-width: 280px; max-width: 280px;
+      height: 100%; overflow-y: auto; overflow-x: hidden;
+      background: var(--panel-bg);
+      border-right: 1px solid var(--panel-border);
+      backdrop-filter: blur(20px);
+      padding: 20px 14px 30px;
+      display: flex; flex-direction: column; gap: 16px;
+      z-index: 10;
+      scrollbar-width: thin; scrollbar-color: #333 transparent;
+    }
+    #panel::-webkit-scrollbar { width: 4px; }
+    #panel::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+
+    /* ── Canvas Area ── */
+    #canvas-area {
+      flex: 1; position: relative; overflow: hidden;
+    }
+    #canvas-area canvas { display: block; width: 100% !important; height: 100% !important; }
+
+    /* ── Panel Typography ── */
+    .panel-title {
+      font-size: 1.1rem; font-weight: 700; letter-spacing: -0.3px;
+      color: var(--text); line-height: 1.2;
+    }
+    .panel-subtitle {
+      font-size: 0.72rem; font-weight: 500; letter-spacing: 0.5px;
+      text-transform: uppercase; color: var(--text-sec); margin-top: 2px;
+    }
+    .panel-logo {
+      display: flex; align-items: center; gap: 10px;
+      padding-bottom: 14px; border-bottom: 1px solid var(--panel-border);
+    }
+    .panel-logo-icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      background: linear-gradient(135deg, #0071e3, #5e5ce6);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem; flex-shrink: 0;
+    }
+
+    .section-label {
+      font-size: 0.68rem; font-weight: 600; letter-spacing: 0.8px;
+      text-transform: uppercase; color: var(--text-ter); margin-bottom: 6px;
+    }
+
+    /* ── Pill Buttons ── */
+    .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .btn-grid.cols3 { grid-template-columns: 1fr 1fr 1fr; }
+    .btn-pill {
+      padding: 7px 10px; border-radius: 999px; border: none;
+      background: var(--card-bg); color: var(--text); font-size: 0.72rem;
+      font-weight: 500; cursor: pointer; border: 1px solid var(--card-border);
+      transition: all 0.15s ease; white-space: nowrap; font-family: var(--font);
+      text-align: center;
+    }
+    .btn-pill:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .btn-pill.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    /* ── Toggles ── */
+    .toggle-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 10px; border-radius: var(--radius-sm);
+      background: var(--card-bg); border: 1px solid var(--card-border);
+      cursor: pointer; transition: background 0.15s;
+    }
+    .toggle-row:hover { background: rgba(255,255,255,0.07); }
+    .toggle-label { font-size: 0.8rem; font-weight: 500; display: flex; align-items: center; gap: 6px; }
+    .toggle-switch {
+      width: 36px; height: 20px; border-radius: 999px; background: #333;
+      position: relative; transition: background 0.2s; flex-shrink: 0;
+    }
+    .toggle-switch.on { background: var(--accent); }
+    .toggle-switch::after {
+      content: ''; position: absolute; top: 3px; left: 3px;
+      width: 14px; height: 14px; border-radius: 50%;
+      background: #fff; transition: left 0.2s;
+    }
+    .toggle-switch.on::after { left: 19px; }
+
+    /* ── Spec Cards ── */
+    .spec-grid { display: flex; flex-direction: column; gap: 4px; }
+    .spec-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 10px; border-radius: 8px;
+      font-size: 0.75rem; background: var(--card-bg);
+    }
+    .spec-icon { font-size: 0.85rem; flex-shrink: 0; }
+    .spec-key { color: var(--text-sec); flex-shrink: 0; min-width: 68px; }
+    .spec-val { color: var(--text); font-weight: 500; }
+
+    /* ── Collapsible ── */
+    .collapsible-header {
+      display: flex; align-items: center; justify-content: space-between;
+      cursor: pointer; user-select: none;
+    }
+    .collapsible-header .chevron { font-size: 0.7rem; color: var(--text-sec); transition: transform 0.2s; }
+    .collapsible-header.open .chevron { transform: rotate(180deg); }
+    .collapsible-body { overflow: hidden; transition: max-height 0.3s ease; max-height: 0; }
+    .collapsible-body.open { max-height: 600px; }
+
+    /* ── Slider ── */
+    .slider-row { display: flex; align-items: center; gap: 8px; }
+    .slider-row label { font-size: 0.75rem; color: var(--text-sec); flex-shrink: 0; }
+    input[type=range] {
+      flex: 1; accent-color: var(--accent); cursor: pointer;
+      height: 4px; border-radius: 4px;
+    }
+    .slider-val { font-size: 0.72rem; color: var(--text-sec); min-width: 26px; text-align: right; }
+
+    /* ── Color Swatches ── */
+    .color-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .color-swatch {
+      width: 32px; height: 32px; border-radius: 8px; cursor: pointer;
+      border: 2px solid transparent; transition: border-color 0.15s, transform 0.15s;
+    }
+    .color-swatch:hover { transform: scale(1.1); }
+    .color-swatch.active { border-color: var(--accent); }
+
+    /* ── Canvas overlays ── */
+    #hint {
+      position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
+      font-size: 0.68rem; color: rgba(255,255,255,0.3); pointer-events: none;
+      white-space: nowrap; letter-spacing: 0.3px;
+    }
+    #fps {
+      position: absolute; bottom: 14px; right: 16px;
+      font-size: 0.65rem; color: rgba(255,255,255,0.2); pointer-events: none;
+      font-variant-numeric: tabular-nums; font-family: monospace;
+    }
+    #loading {
+      position: absolute; inset: 0; background: var(--bg);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 16px; z-index: 100; transition: opacity 0.5s;
+    }
+    #loading.hidden { opacity: 0; pointer-events: none; }
+    .spinner {
+      width: 44px; height: 44px; border: 3px solid rgba(255,255,255,0.1);
+      border-top-color: var(--accent); border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { font-size: 0.8rem; color: var(--text-sec); }
+
+    /* ── Navbar ── */
+    .top-bar {
+      position: absolute; top: 0; left: 0; right: 0; height: 44px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 16px;
+      background: rgba(10,10,15,0.85); backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255,255,255,0.06); z-index: 20;
+    }
+    .top-bar a { color: var(--text-sec); text-decoration: none; font-size: 0.78rem; }
+    .top-bar a:hover { color: var(--text); }
+    .top-bar .bc { color: var(--text-ter); margin: 0 4px; }
+    .top-bar-right { font-size: 0.72rem; color: var(--text-ter); }
+
+    /* ── Responsive ── */
+    @media (max-width: 767px) {
+      #panel { display: none; }
+      #canvas-area { height: 100%; }
+    }
+    /* ── CAD & Equipment Modal ── */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 1000;
+      background: rgba(0, 0, 0, 0.80);
+      backdrop-filter: blur(20px);
+      display: none; align-items: center; justify-content: center;
+      padding: 24px;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-box {
+      background: #14161f;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 20px;
+      width: 100%; max-width: 980px; max-height: 90vh;
+      display: flex; flex-direction: column;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.9);
+      overflow: hidden; animation: popIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes popIn {
+      from { transform: scale(0.96); opacity: 0; }
+      to   { transform: scale(1.0);  opacity: 1; }
+    }
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 24px; border-bottom: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.02);
+    }
+    .modal-title { font-size: 1.15rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px; }
+    .modal-close {
+      background: rgba(255,255,255,0.08); border: none; color: #aaa;
+      width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
+      font-size: 1.3rem; line-height: 1; display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+    }
+    .modal-close:hover { background: rgba(255,255,255,0.22); color: #fff; }
+    .modal-tabs {
+      display: flex; gap: 8px; padding: 12px 24px;
+      background: rgba(0,0,0,0.3); border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .modal-tab-btn {
+      padding: 8px 18px; border-radius: 980px; border: 1px solid rgba(255,255,255,0.1);
+      background: transparent; color: #8e8ea0; font-size: 0.85rem; font-weight: 600;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .modal-tab-btn.active {
+      background: #0071e3; color: #fff; border-color: #0071e3;
+    }
+    .modal-body {
+      padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px;
+    }
+    .cad-tab-content { display: none; flex-direction: column; gap: 20px; }
+    .cad-tab-content.active { display: flex; }
+    .modal-card {
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 14px; padding: 18px;
+    }
+    .modal-card h4 { font-size: 0.95rem; font-weight: 600; color: #5ac8fa; margin-bottom: 12px; }
+    .modal-img-wrap {
+      background: #0a0c10; border-radius: 10px; padding: 14px; text-align: center;
+      border: 1px solid rgba(255,255,255,0.06); margin-bottom: 10px;
+    }
+    .modal-img-wrap img { max-width: 100%; height: auto; border-radius: 6px; display: block; margin: 0 auto; }
+    .modal-img-cap { font-size: 0.76rem; color: #8e8ea0; margin-top: 8px; }
+    .modal-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .spec-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .spec-table td { padding: 7px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .spec-table td:first-child { color: #8e8ea0; width: 38%; }
+    .spec-table td:last-child { color: #fff; font-weight: 500; }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ══ LEFT PANEL ══ -->
+  <aside id="panel">
+    <div class="panel-logo">
+      <div class="panel-logo-icon">🗄️</div>
+      <div>
+        <div class="panel-title">TPC05-SP-OLT9U</div>
+        <div class="panel-subtitle">3D Model Viewer</div>
+      </div>
+    </div>
+
+    <!-- View Presets -->
+    <div>
+      <div class="section-label">View Presets</div>
+      <div class="btn-grid">
+        <button class="btn-pill active" onclick="setView('default')">🏠 Default</button>
+        <button class="btn-pill" onclick="setView('front')">👁️ Front</button>
+        <button class="btn-pill" onclick="setView('odf')">🚪 ODF Side</button>
+        <button class="btn-pill" onclick="setView('ground')">⏚ Ground Bar</button>
+        <button class="btn-pill" onclick="setView('pdb')">⚡ DC-PDB</button>
+        <button class="btn-pill" onclick="setView('rect')">🔌 Rectifier</button>
+        <button class="btn-pill" onclick="setView('subrack')">🔍 OLT / EDFA</button>
+        <button class="btn-pill" onclick="setView('batt')">🔋 Battery</button>
+        <button class="btn-pill" onclick="setView('left')">🔄 Left</button>
+        <button class="btn-pill" onclick="setView('right')">🔄 Right</button>
+        <button class="btn-pill" onclick="setView('iso')">📐 Isometric</button>
+        <button class="btn-pill" onclick="setView('top')">⬆️ Top</button>
+        <button class="btn-pill" onclick="setView('bottom')">⬇️ Bottom</button>
+      </div>
+    </div>
+
+    <!-- CAD & Equipment Reference Button -->
+    <div>
+      <button class="btn-pill" style="width:100%;background:rgba(0,113,227,0.18);border:1px solid #0071e3;color:#64b5f6;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:600;padding:10px 12px;font-size:0.82rem;" onclick="openCadModal()">
+        <span>📐</span> ดูรูป CAD: ODF, Ground Bar, DC-PDB, Rectifier, OLT
+      </button>
+    </div>
+
+    <!-- Door Controls -->
+    <div>
+      <div class="section-label">Door Controls</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div class="toggle-row" onclick="toggleDoor('front')">
+          <span class="toggle-label">🚪 Front Door</span>
+          <div class="toggle-switch on" id="tog-front"></div>
+        </div>
+        <div class="toggle-row" onclick="toggleDoor('side')">
+          <span class="toggle-label">🚪 Side Door (ODF)</span>
+          <div class="toggle-switch on" id="tog-side"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Component Visibility -->
+    <div>
+      <div class="section-label">Component Visibility</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div class="toggle-row" onclick="toggleComp('ground')">
+          <span class="toggle-label">⏚ Ground Bar & Wires</span>
+          <div class="toggle-switch on" id="tog-ground"></div>
+        </div>
+        <div class="toggle-row" onclick="toggleComp('pdb')">
+          <span class="toggle-label">⚡ DC-PDB Distribution</span>
+          <div class="toggle-switch on" id="tog-pdb"></div>
+        </div>
+        <div class="toggle-row" onclick="toggleComp('power')">
+          <span class="toggle-label">🔌 Rectifier (Huawei)</span>
+          <div class="toggle-switch on" id="tog-power"></div>
+        </div>
+        <div class="toggle-row" onclick="toggleComp('olt')">
+          <span class="toggle-label">📡 OLT / FWDM / EDFA</span>
+          <div class="toggle-switch on" id="tog-olt"></div>
+        </div>
+        <div class="toggle-row" onclick="toggleComp('batt')">
+          <span class="toggle-label">🔋 Battery (LiFePO4)</span>
+          <div class="toggle-switch on" id="tog-batt"></div>
+        </div>
+        <div class="toggle-row" onclick="toggleComp('fan')">
+          <span class="toggle-label">🌬️ Cooling Fan</span>
+          <div class="toggle-switch on" id="tog-fan"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cabinet Color -->
+    <div>
+      <div class="section-label">Cabinet Color</div>
+      <div class="color-row">
+        <div class="color-swatch active" style="background:#9da6a6;" title="RAL7040 Grey" onclick="setCabColor('#9da6a6',this)"></div>
+        <div class="color-swatch" style="background:#2a2a2a;" title="Black" onclick="setCabColor('#2a2a2a',this)"></div>
+        <div class="color-swatch" style="background:#c0c0c0;" title="Silver" onclick="setCabColor('#c0c0c0',this)"></div>
+        <div class="color-swatch" style="background:#4b5320;" title="Military Green" onclick="setCabColor('#4b5320',this)"></div>
+      </div>
+    </div>
+
+    <!-- Animation Controls -->
+    <div>
+      <div class="section-label">Animation</div>
+      <div class="toggle-row" style="margin-bottom:8px;" onclick="toggleAutoRotate()">
+        <span class="toggle-label">▶️ Auto Rotate</span>
+        <div class="toggle-switch on" id="tog-rotate"></div>
+      </div>
+      <div class="slider-row">
+        <label>Speed</label>
+        <input type="range" min="0.1" max="3.0" step="0.1" value="0.5" id="speedSlider" oninput="setRotateSpeed(this.value)">
+        <span class="slider-val" id="speedVal">0.5</span>
+      </div>
+    </div>
+
+    <!-- Specs (Collapsible) -->
+    <div>
+      <div class="collapsible-header open" onclick="toggleSpec(this)">
+        <div class="section-label" style="margin-bottom:0;">Specifications</div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="collapsible-body open" style="margin-top:8px;">
+        <div class="spec-grid">
+          <div class="spec-row"><span class="spec-icon">📐</span><span class="spec-key">Size</span><span class="spec-val">600×1110×495 mm</span></div>
+          <div class="spec-row"><span class="spec-icon">⚖️</span><span class="spec-key">Weight</span><span class="spec-val">85 kg</span></div>
+          <div class="spec-row"><span class="spec-icon">🌡️</span><span class="spec-key">Temp</span><span class="spec-val">0 – 55 °C</span></div>
+          <div class="spec-row"><span class="spec-icon">💧</span><span class="spec-key">IP Rating</span><span class="spec-val">IP55</span></div>
+          <div class="spec-row"><span class="spec-icon">🔌</span><span class="spec-key">AC Input</span><span class="spec-val">220 VAC 1P</span></div>
+          <div class="spec-row"><span class="spec-icon">🔋</span><span class="spec-key">Battery</span><span class="spec-val">48V 20Ah</span></div>
+          <div class="spec-row"><span class="spec-icon">🌬️</span><span class="spec-key">Fan</span><span class="spec-val">DC Variable Speed</span></div>
+          <div class="spec-row"><span class="spec-icon">🔐</span><span class="spec-key">Lock</span><span class="spec-val">Triple Point ×2</span></div>
+          <div class="spec-row"><span class="spec-icon">🏗️</span><span class="spec-key">Standard</span><span class="spec-val">ETSI 300mm rack</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="margin-top:auto;padding-top:12px;border-top:1px solid var(--panel-border);">
+      <div style="font-size:0.66rem;color:var(--text-ter);text-align:center;line-height:1.6;">
+        TPP TPC05-SP-OLT9U<br>Cabinet 3D Viewer v1.0
+      </div>
+    </div>
+  </aside>
+
+  <!-- ══ CANVAS AREA ══ -->
+  <div id="canvas-area">
+    <!-- Top Bar -->
+    <div class="top-bar">
+      <div>
+        <a href="../index.html">🏠 Cabinet</a>
+        <span class="bc">›</span>
+        <a href="cabinet-detail.html">TPC05-SP-OLT9U</a>
+        <span class="bc">›</span>
+        <span style="color:var(--text);font-size:0.78rem;">3D View</span>
+      </div>
+      <div class="top-bar-right">Three.js r128 · WebGL</div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loading">
+      <div class="spinner"></div>
+      <div class="loading-text">Initializing 3D Scene…</div>
+    </div>
+
+    <!-- Hints -->
+    <div id="hint">Drag to rotate &nbsp;·&nbsp; Scroll to zoom &nbsp;·&nbsp; Right-click to pan</div>
+    <div id="fps">-- fps</div>
+  </div>
+</div>
+
+<!-- ══ CAD & EQUIPMENT MODAL ══ -->
+<div id="cad-modal" class="modal-overlay" onclick="closeCadModal(event)">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">
+        <span>📐</span> แบบ CAD & แผงหน้าเครื่องอุปกรณ์โทรคมนาคม (DC-PDB, Huawei Rectifier, ZTE OLT & EDFA)
+      </div>
+      <button class="modal-close" onclick="closeCadModal(event)">×</button>
+    </div>
+
+    <!-- Modal Tabs -->
+    <div class="modal-tabs">
+      <button class="modal-tab-btn" id="tab-btn-odf" onclick="switchCadTab('odf')">🚪 ODF & AC Side</button>
+      <button class="modal-tab-btn active" id="tab-btn-ground" onclick="switchCadTab('ground')">⏚ Grounding Busbar</button>
+      <button class="modal-tab-btn" id="tab-btn-dcpdb" onclick="switchCadTab('dcpdb')">⚡ DC-PDB</button>
+      <button class="modal-tab-btn" id="tab-btn-etp4830" onclick="switchCadTab('etp4830')">🔌 Huawei Rectifier</button>
+      <button class="modal-tab-btn" id="tab-btn-c610" onclick="switchCadTab('c610')">🌐 ZTE C610 OLT</button>
+      <button class="modal-tab-btn" id="tab-btn-edfa" onclick="switchCadTab('edfa')">⚡ MOSSMAN EDFA</button>
+    </div>
+
+    <!-- Modal Body -->
+    <div class="modal-body">
+      <!-- ── TAB 0: ODF & AC COMPARTMENT ── -->
+      <div id="tab-odf" class="cad-tab-content">
+        <div class="modal-card">
+          <h4>🖼️ ภาพการติดตั้ง ODF, Splice Tray & กล่องไฟ AC หน้างานจริง (Site ODF & AC Distribution Photo)</h4>
+          <div class="modal-img-wrap" style="text-align:center;">
+            <img src="../assets/img/odf_compartment_site.jpg" alt="ODF & AC Distribution Compartment" style="max-height:480px;object-fit:contain;background:#1a1c20;border-radius:8px;" />
+            <div class="modal-img-cap">ตู้ฝั่งข้าง ODF: ด้านบนเป็น 48-Core SC/APC Adapter + วงล้อสแล็คสาย, กลางเป็นถาดสไปรซ์พร้อมตีนตุ๊กแก, ล่างซ้ายเป็นกล่องไฟ AC/SPD, ล่างกลางเป็นบาร์กราวด์</div>
+          </div>
+        </div>
+
+        <div class="modal-card">
+          <h4>🔢 รายละเอียดโครงสร้างและการจัดวางอุปกรณ์ฝั่ง ODF (Compartment Layout Breakdown)</h4>
+          <table class="spec-table">
+            <tr><td style="width:210px;"><code>Dual Slack Spools</code></td><td>วงล้อเก็บสแล็คสายไฟเบอร์คู่ทรงกระบอกสีขาวด้านบนสุด สำหรับพักและม้วนเก็บความยาวส่วนเกินของสายไฟเบอร์ออปติก</td></tr>
+            <tr><td><code>48-Core ODF Adapter Array</code></td><td>แถบกระจายสายไฟเบอร์แนวตั้ง 48 พอร์ต พร้อมตัวเลขกำกับกลุ่ม 1-6 ถึง 43-48 อะแดปเตอร์ SC/APC สีเขียว 2 ฝั่ง พร้อมสายแพตช์คอร์ดสีเหลืองและป้ายมาร์กเกอร์</td></tr>
+            <tr><td><code>Fiber Splice Cassette</code></td><td>ถาดสไปรซ์ไฟเบอร์สีขาว (Splice Tray) สำหรับเก็บจุดเชื่อมต่อฟิวชั่นสไปรซ์ พร้อมสายรัดตีนตุ๊กแกสีดำ (Black Velcro Strap)</td></tr>
+            <tr><td><code>AC Distribution & SPD Box</code></td><td>กล่องควบคุมไฟ AC 220V สีเทาเข้ม: เบรกเกอร์ 2P AC INPUT, อุปกรณ์ป้องกันไฟกระชาก SPD (2 โมดูลหน้าต่างเขียว), เบรกเกอร์ 1P AC OUTPUT, เต้ารับไฟฟ้า 3 ขา และป้ายเตือนไฟฟ้าแรงสูง ⚠️</td></tr>
+            <tr><td><code>Ground Busbar & PE Lug</code></td><td>แถบบาร์กราวด์ทองแดงชุบนิกเกิลแนวตั้ง พร้อมน็อต M6 หางปลากลมปลอกเขียว และสายดินเขียว-เหลืองต่อไปยังฝาประตูตู้</td></tr>
+            <tr><td><code>Inner Door Documentation</code></td><td>ด้านในบานประตูตู้ ODF มีซองอะคริลิกใสใส่ผังการกระจายสาย (Fiber Distribution Diagram) และคู่มือขั้นตอนการติดตั้ง (Operation Manual)</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── TAB 1: GROUND BAR ── -->
+      <div id="tab-ground" class="cad-tab-content active">
+        <div class="modal-card">
+          <h4>🖼️ ภาพการติดตั้ง Ground Busbar & หางปลาหัว-ท้ายหน้างานจริง (Site Grounding & Ring Lugs Photos)</h4>
+          <div class="modal-grid-2">
+            <div class="modal-img-wrap">
+              <img src="../assets/img/ground_equip_lug.png" alt="Equipment Ring Terminal Lug" style="max-height:360px;object-fit:contain;background:#1a1c20;" />
+              <div class="modal-img-cap">ฝั่งอุปกรณ์: หางปลากลมชุบดีบุก + ปลอกฉนวนเขียว ยึดด้วยสกรู M5/M6 พร้อมแต้มสีแดง QC และสติกเกอร์สัญลักษณ์กราวด์ ⏚</div>
+            </div>
+            <div class="modal-img-wrap">
+              <img src="../assets/img/ground_bar_lugs.png" alt="Ground Busbar Ring Lugs" style="max-height:360px;object-fit:contain;background:#1a1c20;" />
+              <div class="modal-img-cap">ฝั่งบาร์กราวด์: หางปลากลมปลอกเขียว/เหลือง ขันยึดเข้ากับ Ground Busbar พร้อมแหวนรอง แต้มสีแดง และป้ายชื่อสาย True</div>
+            </div>
+            <div class="modal-img-wrap" style="margin-top:10px;">
+              <img src="../assets/img/ground_bar_closeup.jpg" alt="Ground Busbar Close-up View" style="max-height:360px;object-fit:cover;" />
+              <div class="modal-img-cap">แถบทองแดง Ground Busbar (Solid Copper 25×5mm) พร้อมฉนวนลูกถ้วยสีแดง (Red Standoff Isolators 1kV)</div>
+            </div>
+            <div class="modal-img-wrap" style="margin-top:10px;">
+              <img src="../assets/img/ground_bar_cabinet.jpg" alt="Cabinet Grounding Wiring" style="max-height:360px;object-fit:cover;" />
+              <div class="modal-img-cap">ภาพรวมการเดินสายกราวด์สีเหลือง-เขียว (Equipotential Ground Wiring) จัดระเบียบเข้าสู่ Ground Bar</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-card">
+          <h4>🔢 รายละเอียดการเชื่อมต่อสายกราวด์อุปกรณ์ (Ground Wiring Schedule)</h4>
+          <table class="spec-table">
+            <tr><td style="width:190px;"><code>Copper Ground Bar</code></td><td>แถบทองแดงบริสุทธิ์ (Solid Copper Busbar) ขนาด 25 mm × 5 mm พร้อมฉนวนลูกถ้วยโพลีเอสเตอร์สีแดงทนแรงดัน 1kV ยึดข้างเสาแร็ค</td></tr>
+            <tr><td><code>DC-PDB Ground</code></td><td>สายดินสีเหลือง-เขียว ขนาด 6 mm² จากจุดกราวด์แชสซีส์ DC-PDB เข้าบัสบาร์จุดที่ 1</td></tr>
+            <tr><td><code>Huawei ETP4830-PE</code></td><td>สายดินขนาด 6 mm² จากขั้ว PE (Protective Earth) ช่องต่อไฟเข้า AC เข้าบัสบาร์จุดที่ 3</td></tr>
+            <tr><td><code>ZTE ZXA10 C610 Ground</code></td><td>สายดินขนาด 6 mm² พร้อมป้ายมาร์กเกอร์ "ZTE C610 Ground" จากน็อตกราวด์หูแร็คซ้าย เข้าบัสบาร์จุดที่ 4</td></tr>
+            <tr><td><code>MOSSMAN EDFA Ground</code></td><td>สายดินขนาด 6 mm² จากขั้วกราวด์แชสซีส์ EDFA เข้าบัสบาร์จุดที่ 6</td></tr>
+            <tr><td><code>FWDM Module Ground</code></td><td>สายดินขนาด 4 mm² จากขั้วกราวด์แชสซีส์ FWDM เข้าบัสบาร์จุดที่ 5</td></tr>
+            <tr><td><code>Lithium Batteries (1&2)</code></td><td>สายกราวด์ขนาด 6 mm² จากขั้วกราวด์แผง BMS ของแบตเตอรี่ Pack 1 และ Pack 2 เข้าบัสบาร์จุดที่ 7 และ 8</td></tr>
+            <tr><td><code>Main Earth Conductor</code></td><td>สายเมนกราวด์เส้นใหญ่ขนาด 16/25 mm² เข้าขั้วล่างสุด ("Ground to left") ลากลงผ่านเคเบิลแกลนด์ใต้ตู้ลง Ground Rod ดิน</td></tr>
+          </table>
+        </div>
+
+        <div class="modal-card">
+          <h4>📋 มาตรฐานทางวิศวกรรมงานระบบดิน (Earthing Engineering Standards)</h4>
+          <div class="modal-grid-2">
+            <table class="spec-table">
+              <tr><td>Busbar Material</td><td>Solid Electrolytic Copper (Cu-ETP ≥99.9%)</td></tr>
+              <tr><td>Dimensions</td><td>25 mm (W) × 5 mm (T) × 460 mm (L)</td></tr>
+              <tr><td>Standoff Insulators</td><td>Red BMC/Polyester Resin (Rated 1000V)</td></tr>
+              <tr><td>Terminals</td><td>10× M6 Stainless Steel Studs with Washers</td></tr>
+            </table>
+            <table class="spec-table">
+              <tr><td>System Ground Resistance</td><td>&lt; 5 Ω (True Online Telecom Outdoor Standard)</td></tr>
+              <tr><td>Equipotential Bonding</td><td>&lt; 0.1 Ω (Between equipment chassis & bar)</td></tr>
+              <tr><td>Wire Type</td><td>THW / NYY 450/750V Green/Yellow Stranded Copper</td></tr>
+              <tr><td>Lug Terminal</td><td>Heavy Duty Tin-plated Copper Ring Lugs with Shrink Boots</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TAB 2: DC-PDB ── -->
+      <div id="tab-dcpdb" class="cad-tab-content">
+        <div class="modal-card">
+          <h4>🖼️ ภาพการติดตั้งหน้างานจริง (Field Installation Architecture) — DC-PDB 19" 2U</h4>
+          <div class="modal-img-wrap">
+            <img src="../assets/img/dc_pdb_diagram.png" alt="DC-PDB Field Installation Architecture" />
+            <div class="modal-img-cap">DC Power Distribution Box (DC-PDB) 2U 19" Rackmount Subrack with DIN Rail MCBs & SPDs</div>
+          </div>
+          <div class="modal-img-wrap" style="margin-top:14px;">
+            <img src="../assets/img/dc_pdb_front_panel.png" alt="DC-PDB Front Panel Texture" />
+            <div class="modal-img-cap">Front Panel Photo-Real Bayface — DIN Rail Miniature Circuit Breakers & DC Busbars</div>
+          </div>
+        </div>
+
+        <div class="modal-card">
+          <h4>🔢 คำอธิบายส่วนประกอบแผงกระจายไฟ DC-PDB (Component Breakdown)</h4>
+          <table class="spec-table">
+            <tr><td style="width:180px;"><code>SOCKET Module</code></td><td>เต้ารับไฟฟ้า AC 220V ด้านซ้ายสุด พร้อมสวิตช์และไฟ LED แสดงสถานะสีฟ้า สำหรับเสียบไฟงานบำรุงรักษาในตู้</td></tr>
+            <tr><td><code>Main AC/DC MCB</code></td><td>เบรกเกอร์เมน Nader NDM1A-63 (2-Pole คันโยกสีเทา) ควบคุมและตัดตอนวงจรหลัก</td></tr>
+            <tr><td><code>Surge Protective (SPD)</code></td><td>อุปกรณ์ป้องกันไฟกระชาก (Surge Protection Device) 2 โมดูล SPDM-OV50 และ SPD-GDT50 หน้าต่างแสดงสถานะสีเขียว (ปกติ)</td></tr>
+            <tr><td><code>VALVETRAB Block</code></td><td>ชุดเทอร์มินัลบล็อกและโมดูลเชื่อมต่อระบบกราวด์/ป้องกันฟ้าผ่า Phoenix Contact</td></tr>
+            <tr><td><code>Battery Breakers</code></td><td>2× Nader NDM1A-125 (125A คันโยกสีเทา) วงจรแยกป้องกันแบตเตอรี่ลิเธียม Pack 1 และ Pack 2</td></tr>
+            <tr><td><code>Equipment Breakers</code></td><td>Nader NDM1A-63 (C16, C32, C63) และ ABB MCB (คันโยกสีดำ 2 ตัว) จ่ายไฟชุด Rectifier และอุปกรณ์หลัก</td></tr>
+            <tr><td><code>DC Branch Breakers</code></td><td>6× Nader NDB2-63 (คันโยกสีน้ำเงิน) สำหรับกระจายไฟ DC -48V ไปยัง OLT C610, EDFA, FWDM, พัดลม และไฟส่องสว่าง</td></tr>
+            <tr><td><code>Comb Busbar Plate</code></td><td>แผ่นบัสบาร์ทองแดงชุบนิกเกิลด้านล่าง พร้อมแผ่นการ์ดชีลด์ป้องกันการสัมผัสไฟฟ้าโดยตรง</td></tr>
+          </table>
+        </div>
+
+        <div class="modal-card">
+          <h4>📋 ข้อมูลเชิงวิศวกรรม (Engineering Specifications)</h4>
+          <div class="modal-grid-2">
+            <table class="spec-table">
+              <tr><td>Type</td><td>19" Subrack DC Power Distribution Box (DC-PDB)</td></tr>
+              <tr><td>Form Factor</td><td>2U Standard 19-inch Rackmount</td></tr>
+              <tr><td>Dimensions</td><td>88 mm (H) × 442 mm (W) × 220 mm (D)</td></tr>
+              <tr><td>Installation</td><td>Topmost Position of Outdoor Cabinet 19" Rack</td></tr>
+              <tr><td>Mounting Rail</td><td>Standard 35mm DIN Rail (EN 50022)</td></tr>
+            </table>
+            <table class="spec-table">
+              <tr><td>Operating Voltage</td><td>-48V DC Nominal & 220V AC Utility</td></tr>
+              <tr><td>Battery Protection</td><td>2× 125A DC Circuit Breakers</td></tr>
+              <tr><td>Surge Protection</td><td>Class C/D SPD (Up to 50kA 8/20µs)</td></tr>
+              <tr><td>Branch Circuits</td><td>Up to 14 DC Distribution Branches</td></tr>
+              <tr><td>Operating Temp</td><td>-40°C to +75°C (Outdoor Cabinet Ready)</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TAB 2: ZTE C610 ── -->
+      <div id="tab-c610" class="cad-tab-content">
+        <div class="modal-card">
+          <h4>🖼️ แผงหน้าเครื่องจริง (Front Panel Engineering View) — ZTE ZXA10 C610</h4>
+          <div class="modal-img-wrap">
+            <img src="../assets/img/zte_c610_front_panel.png" alt="ZTE ZXA10 C610 Front Panel" />
+            <div class="modal-img-cap">ZTE ZXA10 C610 1U High-Density Pizza-Box PON OLT Front Panel Architecture</div>
+          </div>
+          <div class="modal-img-wrap" style="margin-top:14px;">
+            <img src="../assets/img/zte_c610_iso_render.png" alt="ZTE C610 3D CAD Render" />
+            <div class="modal-img-cap">3D CAD Isometric Render — 1U Standard 19" Rackmount Chassis</div>
+          </div>
+        </div>
+
+        <div class="modal-card">
+          <h4>📋 ข้อมูลเชิงวิศวกรรม (Engineering Specifications)</h4>
+          <div class="modal-grid-2">
+            <table class="spec-table">
+              <tr><td>Model</td><td>ZTE ZXA10 C610</td></tr>
+              <tr><td>Form Factor</td><td>1U Pizza-Box OLT (19" Rack)</td></tr>
+              <tr><td>Dimensions</td><td>43.6 mm (H) × 442 mm (W) × 220 mm (D)</td></tr>
+              <tr><td>Weight</td><td>&lt; 5 kg (Full configuration)</td></tr>
+              <tr><td>PON Ports</td><td>16× Any-PON / XGS-PON / GPON SFP Cages</td></tr>
+            </table>
+            <table class="spec-table">
+              <tr><td>Uplink Ports</td><td>4× 10GE/GE Optical SFP+ Ports</td></tr>
+              <tr><td>Management</td><td>1× Out-of-band MGMT, 1× Console RJ45</td></tr>
+              <tr><td>Power Supply</td><td>Dual Hot-swappable DC (-48V) / AC 1+1</td></tr>
+              <tr><td>Power Rating</td><td>Typ. 65W, Max 110W (High Efficiency)</td></tr>
+              <tr><td>Operating Temp</td><td>-40°C to +65°C (Outdoor Cabinet Ready)</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TAB 2: MOSSMAN EDFA ── -->
+      <div id="tab-edfa" class="cad-tab-content">
+        <div class="modal-card">
+          <h4>🖼️ แผงหน้าเครื่องจริง (Front Panel Engineering View) — MOSSMAN ML-OAH Series</h4>
+          <div class="modal-img-wrap">
+            <img src="../assets/img/edfa_mossman_ml_oah_front_panel.png" alt="MOSSMAN EDFA ML-OAH Front Panel" />
+            <div class="modal-img-cap">MOSSMAN ML-OAH 1550nm EDFA Front Panel with Backlit LCD Display & Dual Front Power</div>
+          </div>
+        </div>
+
+        <div class="modal-card">
+          <h4>📐 แบบ CAD มิติเชิงกล (Mechanical Dimension CAD Blueprint)</h4>
+          <div class="modal-img-wrap">
+            <img src="../assets/img/edfa_mossman_cad_drawing.png" alt="MOSSMAN EDFA Mechanical CAD Drawing" />
+            <div class="modal-img-cap">CAD Mechanical Blueprint: W 482mm (19" with ears), D 242mm, H 44mm (1U), Holes 6.8×10.3mm</div>
+          </div>
+          <div class="modal-img-wrap" style="margin-top:14px;">
+            <img src="../assets/img/edfa_mossman_iso_render.png" alt="MOSSMAN EDFA 3D Isometric View" />
+            <div class="modal-img-cap">3D Isometric View — MOSSMAN 1550nm Optical Amplifier</div>
+          </div>
+        </div>
+
+        <div class="modal-card">
+          <h4>🏷️ ถอดรหัสรหัสรุ่นมาตรฐาน True Online (Part Number Decoding)</h4>
+          <div style="background:rgba(0,113,227,0.1);border:1px solid rgba(0,113,227,0.3);border-radius:8px;padding:12px;margin-bottom:12px;font-family:monospace;font-size:0.95rem;color:#64b5f6;">
+            <strong>ML-OAH 2 19 S C L - D2 F N</strong>
+          </div>
+          <table class="spec-table">
+            <tr><td><code>ML-OAH</code></td><td>1550nm High-Power EDFA Optical Amplifier Series with Built-in WDM</td></tr>
+            <tr><td><code>2</code></td><td>8 Optical Outputs with 8 OLT In Ports (Combo PON/XGS-PON)</td></tr>
+            <tr><td><code>19</code></td><td>19 dBm Constant Optical Output Power per Port (measured after WDM)</td></tr>
+            <tr><td><code>S</code></td><td>Built-in Optical Switch (&lt;20ms automatic protection switching)</td></tr>
+            <tr><td><code>C</code></td><td>SC/APC Connector (Optical Out & CATV)</td></tr>
+            <tr><td><code>L</code></td><td>LC/APC Connector (OLT In)</td></tr>
+            <tr><td><code>D2</code></td><td>Dual -48VDC Redundant Power Supply (1+1 Hot Standby)</td></tr>
+            <tr><td><code>F</code></td><td>Front Panel Power Connection (Double -48VDC plug-in on Front)</td></tr>
+            <tr><td><code>N</code></td><td>NIL (No RF Output)</td></tr>
+            <tr><td>Dimensions</td><td>44 mm (H) × 483 mm (W) × 242 mm (D) — 1U Standard 19" Rackmount</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── TAB 3: HUAWEI ETP4830-A1 RECTIFIER ── -->
+      <div id="tab-etp4830" class="cad-tab-content">
+        <div class="modal-card">
+          <h4>🖼️ แผนผังโครงสร้างวิศวกรรม (Engineering Structural Architecture) — Huawei ETP4830-A1</h4>
+          <div class="modal-img-wrap">
+            <img src="../assets/img/huawei_etp4830_diagram.png" alt="Huawei ETP4830-A1 Component Diagram" />
+            <div class="modal-img-cap">Huawei ETP4830-A1 1U Embedded Telecom DC Power System Architecture</div>
+          </div>
+          <div class="modal-img-wrap" style="margin-top:14px;">
+            <img src="../assets/img/huawei_etp4830_front_panel.png" alt="Huawei ETP4830-A1 Front Panel" />
+            <div class="modal-img-cap">Front Panel Photo-Real Bayface — 1U 19" Rackmount (442 mm × 43.6 mm)</div>
+          </div>
+        </div>
+
+        <div class="modal-card">
+          <h4>🔢 คำอธิบายส่วนประกอบแผงหน้าเครื่อง (Component Callout Breakdown)</h4>
+          <table class="spec-table">
+            <tr><td style="width:180px;"><code>(1) AC input terminal</code></td><td>ช่องต่อไฟเข้า AC พร้อมฝาครอบนิรภัยอะคริลิกใสและสัญลักษณ์เตือนไฟฟ้าแรงสูง (L, N, PE) ป้องกันการสัมผัสโดยตรง</td></tr>
+            <tr><td><code>(2) SMU</code></td><td>Site Monitoring Unit ชุดควบคุมและตรวจสอบสถานะ พร้อมหน้าจอ LCD แสดงผล, ปุ่มควบคุม 4 ทิศทาง, พอร์ต COM/RS485/FE RJ45</td></tr>
+            <tr><td><code>(3) Rectifiers</code></td><td>ช่องเสียบโมดูล Rectifier แบบ Hot-swappable 2 ช่อง รองรับรุ่น R4815G/N (15A/1000W) หรือ R4830G (30A/2000W) ตะแกรงรังผึ้งระบายอากาศ</td></tr>
+            <tr><td><code>(4) LOAD fuses</code></td><td>กระบอกฟิวส์โหลด DC Output (LOAD 1, LOAD 2) ขนาด 20A แบบหัวหมุนเกลียว (Screw-cap fuse) ป้องกันไฟฟ้าลัดวงจร</td></tr>
+            <tr><td><code>(5) Battery fuse</code></td><td>กระบอกฟิวส์แบตเตอรี่ (BATT) ขนาด 20A แบบหัวหมุนเกลียวด้านบน ป้องกันวงจรชาร์จและดิสชาร์จแบตเตอรี่ลิเธียม</td></tr>
+            <tr><td><code>(6) DC output port</code></td><td>คอนเน็กเตอร์ Quick-connect เทอร์มินัล 3 ช่อง: LOAD1 (20A), LOAD2 (20A), และ BATT (20A) สำหรับจ่ายไฟให้อุปกรณ์และต่อแบตเตอรี่</td></tr>
+          </table>
+        </div>
+
+        <div class="modal-card">
+          <h4>📋 ข้อมูลเชิงวิศวกรรม (Engineering Specifications)</h4>
+          <div class="modal-grid-2">
+            <table class="spec-table">
+              <tr><td>Model</td><td>Huawei ETP4830-A1</td></tr>
+              <tr><td>System Type</td><td>1U Embedded Telecom DC Power System</td></tr>
+              <tr><td>Dimensions</td><td>43.6 mm (H) × 442 mm (W) × 255 mm (D)</td></tr>
+              <tr><td>Weight</td><td>≤ 8 kg (รวมโมดูล Rectifier 2 ตัว)</td></tr>
+              <tr><td>Cooling</td><td>Intelligent Variable Speed Fans in Rectifiers</td></tr>
+            </table>
+            <table class="spec-table">
+              <tr><td>AC Input</td><td>85V to 300V AC (Rated 220V 1P, 50/60 Hz)</td></tr>
+              <tr><td>DC Output</td><td>-48V DC nominal (Adjustable 42V to 58V DC)</td></tr>
+              <tr><td>Max Power</td><td>2,000 W (30A @ -48V DC with 2× Rectifiers)</td></tr>
+              <tr><td>Efficiency</td><td>&gt; 96% (Ultra-high efficiency R4815G)</td></tr>
+              <tr><td>Operating Temp</td><td>-40°C to +70°C (Reliable Outdoor Cabinet PM)</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ THREE.JS ══ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="../assets/js/equipment_textures.js"></script>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  SCENE GLOBALS
+// ═══════════════════════════════════════════════════════════
+let scene, camera, renderer, controls;
+let cabinetGroup, frontDoor, sideDoor;
+let internalGroup = {};
+let pointLightInside;
+let animReq;
+
+const CAB = { W: 0.60, H: 1.11, D: 0.495 };   // metres (Three.js units)
+const HALF = { W: CAB.W/2, H: CAB.H/2, D: CAB.D/2 };
+
+let doorState = { front: true, side: true };  // true = open
+let compState = { fan: true, power: true, pdb: true, olt: true, batt: true, ground: true };
+let autoRotate = true;
+let targetCam = null;   // {x,y,z}
+let targetLook = { x:0, y:0, z:0 };
+
+// FPS tracking
+let fpsFrames = 0, fpsLast = performance.now();
+
+// ═══════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════
+function init() {
+  const container = document.getElementById('canvas-area');
+  const W = container.clientWidth, H = container.clientHeight;
+
+  // Renderer
+  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(W, H);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.1;
+  container.appendChild(renderer.domElement);
+
+  // Scene
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x1a1a2e);
+  scene.fog = new THREE.FogExp2(0x1a1a2e, 0.35);
+
+  // Camera
+  camera = new THREE.PerspectiveCamera(45, W / H, 0.01, 30);
+  camera.position.set(1.5, 1.0, 2.0);
+
+  // Controls
+  controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.target.set(0, 0.1, 0);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.07;
+  controls.minPolarAngle = 0.01;            // allow full vertical orbit to top view
+  controls.maxPolarAngle = Math.PI - 0.02;  // allow full vertical orbit to bottom view (หมุนดูด้านล่างได้ 360°)
+  controls.minDistance = 0.5;
+  controls.maxDistance = 5.5;
+  controls.autoRotate = true;
+  controls.autoRotateSpeed = 0.5;
+
+  // Stop auto-rotate on user interaction
+  controls.addEventListener('start', () => {
+    if (autoRotate) {
+      controls.autoRotate = false;
+      updateToggle('tog-rotate', false);
+      autoRotate = false;
+    }
+  });
+
+  // Lights
+  buildLights();
+
+  // Grid floor
+  const grid = new THREE.GridHelper(6, 30, 0x223355, 0x182040);
+  grid.position.y = -CAB.H / 2 - 0.04;
+  scene.add(grid);
+
+  // Cabinet
+  try {
+    buildCabinet();
+  } catch (err) {
+    console.error('Error building cabinet:', err);
+    const lt = document.querySelector('.loading-text');
+    if (lt) lt.textContent = 'Render error: ' + err.message;
+  }
+
+  // Resize
+  window.addEventListener('resize', onResize);
+
+  // Hide loader
+  setTimeout(() => {
+    const l = document.getElementById('loading');
+    if (l) l.classList.add('hidden');
+  }, 600);
+
+  animate();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  LIGHTS
+// ═══════════════════════════════════════════════════════════
+function buildLights() {
+  const ambL = new THREE.AmbientLight(0xffffff, 0.25);
+  scene.add(ambL);
+
+  const hemi = new THREE.HemisphereLight(0x4466aa, 0x112233, 0.4);
+  scene.add(hemi);
+
+  const dir1 = new THREE.DirectionalLight(0xffffff, 0.9);
+  dir1.position.set(3, 5, 4);
+  dir1.castShadow = true;
+  dir1.shadow.mapSize.set(1024, 1024);
+  scene.add(dir1);
+
+  const dir2 = new THREE.DirectionalLight(0xaaccff, 0.4);
+  dir2.position.set(-3, 2, -3);
+  scene.add(dir2);
+
+  const dir3 = new THREE.DirectionalLight(0xffd080, 0.2);
+  dir3.position.set(0, -2, 4);
+  scene.add(dir3);
+
+  // Bottom Upward Fill Light (illuminates underside of cabinet when looking from below)
+  const bottomLight = new THREE.DirectionalLight(0xdce8f5, 0.65);
+  bottomLight.position.set(0, -5, 1.5);
+  scene.add(bottomLight);
+
+  const bottomAmb = new THREE.AmbientLight(0xffffff, 0.12);
+  scene.add(bottomAmb);
+
+  // Inside cabinet point lights (Cabinet LED Maintenance Lamp)
+  pointLightInside = new THREE.PointLight(0xffffff, 0.85, 1.8);
+  pointLightInside.position.set(0, 0.05, 0.38);
+  scene.add(pointLightInside);
+
+  const subRackLight = new THREE.PointLight(0xf0f6ff, 0.7, 1.2);
+  subRackLight.position.set(0, -0.16, 0.32);
+  scene.add(subRackLight);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  MATERIAL HELPERS
+// ═══════════════════════════════════════════════════════════
+function mat(color, metalness=0.4, roughness=0.6, emissive=0x000000, emissiveIntensity=0) {
+  return new THREE.MeshStandardMaterial({ color, metalness, roughness, emissive, emissiveIntensity });
+}
+function box(w, h, d, material, x=0, y=0, z=0) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
+  m.position.set(x, y, z);
+  m.castShadow = true;
+  m.receiveShadow = true;
+  return m;
+}
+function makeLabel(text, color='#ffffff', bgColor='rgba(0,0,0,0.75)') {
+  // Floating label sprites disabled so they do not block the 3D model
+  const empty = new THREE.Group();
+  empty.visible = false;
+  return empty;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  BUILD CABINET
+// ═══════════════════════════════════════════════════════════
+function buildCabinet() {
+  cabinetGroup = new THREE.Group();
+  scene.add(cabinetGroup);
+
+  const cabColor = 0x9da6a6;
+
+  // ── Cabinet Shell ──
+  // Back + sides + top + bottom (open front)
+  const shellMat = mat(cabColor, 0.45, 0.55);
+  const darkMat  = mat(0x6e7878, 0.5, 0.5);
+
+  // Back panel
+  const back = box(CAB.W, CAB.H, 0.008, shellMat, 0, 0, -HALF.D + 0.004);
+  cabinetGroup.add(back);
+
+  // Left side
+  const leftSide = box(0.008, CAB.H, CAB.D, shellMat, -HALF.W + 0.004, 0, 0);
+  cabinetGroup.add(leftSide);
+
+  // Right side (base, the rest is the side door)
+  const rightSide = box(0.008, CAB.H * 0.35, CAB.D, shellMat, HALF.W - 0.004, -CAB.H * 0.325, 0);
+  cabinetGroup.add(rightSide);
+
+  // Top panel
+  const top = box(CAB.W, 0.008, CAB.D, darkMat, 0, HALF.H - 0.004, 0);
+  cabinetGroup.add(top);
+
+  // Bottom panel
+  const bottom = box(CAB.W, 0.012, CAB.D, shellMat, 0, -HALF.H + 0.006, 0);
+  cabinetGroup.add(bottom);
+
+  // Frame edges
+  addEdges(new THREE.BoxGeometry(CAB.W, CAB.H, CAB.D), 0x4a5454, cabinetGroup);
+
+  // ── Cabinet Feet & Bottom Plinth Base (ขาตั้งและฐานยึดตู้) ──
+  const footMat = mat(0x1e2226, 0.75, 0.45);
+  const boltMat = mat(0xd4dce4, 0.85, 0.3);
+  const glandMat = mat(0xe8ecef, 0.3, 0.8);
+  const glandNutMat = mat(0x283038, 0.7, 0.4);
+
+  [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([sx,sz]) => {
+    const fx = sx * (HALF.W - 0.045);
+    const fz = sz * (HALF.D - 0.045);
+    const fy = -HALF.H - 0.020;
+
+    // Plinth mounting foot
+    const foot = box(0.065, 0.040, 0.065, footMat, fx, fy, fz);
+    cabinetGroup.add(foot);
+
+    // Foundation anchor bolt hole & M12 hex bolt
+    const bolt = new THREE.Mesh(new THREE.CylinderGeometry(0.007, 0.007, 0.010, 12), boltMat);
+    bolt.position.set(fx, fy - 0.020, fz);
+    cabinetGroup.add(bolt);
+
+    const washer = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.002, 16), boltMat);
+    washer.position.set(fx, fy - 0.018, fz);
+    cabinetGroup.add(washer);
+  });
+
+  // Bottom Cable Entry Glands (ต่อมเคเบิลแกลนด์ใต้ตู้ สำหรับร้อยสายไฟและไฟเบอร์)
+  [-0.14, -0.06, 0.02, 0.10].forEach(gx => {
+    const glandBody = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.019, 0.018, 16), glandMat);
+    glandBody.position.set(gx, -HALF.H - 0.009, 0.05);
+    cabinetGroup.add(glandBody);
+
+    const glandNut = new THREE.Mesh(new THREE.CylinderGeometry(0.020, 0.020, 0.006, 6), glandNutMat);
+    glandNut.position.set(gx, -HALF.H - 0.003, 0.05);
+    cabinetGroup.add(glandNut);
+  });
+
+  // Bottom ODF Side Cable Entry Gland
+  const odfGlandBody = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.026, 0.022, 16), glandMat);
+  odfGlandBody.position.set(HALF.W - 0.050, -HALF.H - 0.011, 0.02);
+  cabinetGroup.add(odfGlandBody);
+
+  // ── Fan Grille Top ──
+  const grilleMat = mat(0x1a1a1a, 0.7, 0.4);
+  const grille = box(CAB.W - 0.05, 0.015, CAB.D * 0.6, grilleMat, 0, HALF.H + 0.008, -0.04);
+  cabinetGroup.add(grille);
+
+  // Fan rings (2×2)
+  const fanMat = mat(0x111111, 0.9, 0.3);
+  [[-0.12, -0.08],[0.12, -0.08],[-0.12, 0.06],[0.12, 0.06]].forEach(([fx,fz]) => {
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.055, 0.01, 8, 24), fanMat);
+    ring.rotation.x = Math.PI / 2;
+    ring.position.set(fx, HALF.H + 0.018, fz);
+    cabinetGroup.add(ring);
+    // inner ring
+    const inner = new THREE.Mesh(new THREE.TorusGeometry(0.035, 0.007, 8, 24), fanMat);
+    inner.rotation.x = Math.PI / 2;
+    inner.position.set(fx, HALF.H + 0.02, fz);
+    cabinetGroup.add(inner);
+  });
+
+  // ── Back ventilation slots ──
+  const ventMat = mat(0x555f5f, 0.5, 0.7);
+  for (let i = 0; i < 6; i++) {
+    const slot = box(0.45, 0.012, 0.005, ventMat, 0, HALF.H - 0.15 - i * 0.08, -HALF.D + 0.005);
+    cabinetGroup.add(slot);
+  }
+
+  // ── Side vent lines (LineSegments) ──
+  addSideVents(cabinetGroup);
+
+  // ── FRONT DOOR ──
+  frontDoor = buildFrontDoor(cabColor);
+  cabinetGroup.add(frontDoor);
+
+  // ── ODF INTERNAL (inside side compartment) ──
+  cabinetGroup.add(buildODFInternal());
+
+  // ── SIDE DOOR (ODF) ──
+  sideDoor = buildSideDoor(cabColor);
+  cabinetGroup.add(sideDoor);
+
+  // ── Internal Components ──
+  buildInternals();
+}
+
+function addEdges(geo, color, group) {
+  const edges = new THREE.EdgesGeometry(geo);
+  const lineMat = new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.5 });
+  const lines = new THREE.LineSegments(edges, lineMat);
+  group.add(lines);
+}
+
+function addSideVents(group) {
+  const pts = [];
+  for (let i = 0; i < 8; i++) {
+    const y = HALF.H - 0.05 - i * 0.04;
+    pts.push(-HALF.D + 0.05, y, 0, HALF.D - 0.05, y, 0);  // reused as side coords
+  }
+  // Left side vents
+  const geo = new THREE.BufferGeometry();
+  const arr = [];
+  for (let i = 0; i < 8; i++) {
+    const y = 0.1 + i * 0.04;
+    arr.push(-HALF.D + 0.06, y, 0,  HALF.D - 0.06, y, 0);
+  }
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(arr, 3));
+  const lm = new THREE.LineBasicMaterial({ color: 0x667777, transparent: true, opacity: 0.5 });
+  const ls = new THREE.LineSegments(geo, lm);
+  ls.position.x = -HALF.W + 0.009;
+  ls.rotation.y = Math.PI / 2;
+  group.add(ls);
+}
+
+// ── Front Door (Full Height from Roof down to Battery Floor) ──
+function buildFrontDoor(cabColor) {
+  const group = new THREE.Group();
+  // Pivot at left edge of door (hinge)
+  group.position.set(-HALF.W + 0.008, 0, HALF.D);
+
+  const doorW = CAB.W - 0.016; // 0.584m
+  const doorH = CAB.H - 0.020; // 1.090m (covers full height from roof down to bottom floor!)
+  const doorT = 0.014;
+
+  const doorMat = mat(cabColor, 0.45, 0.55);
+  // Main solid steel door slab (centered at y = 0, covering both subrack and battery stack)
+  const d = box(doorW, doorH, doorT, doorMat, doorW / 2, 0, 0);
+  group.add(d);
+
+  // Door perimeter edges
+  const eg = new THREE.EdgesGeometry(new THREE.BoxGeometry(doorW, doorH, doorT));
+  const el = new THREE.LineSegments(eg, new THREE.LineBasicMaterial({ color: 0x4a5454, transparent: true, opacity: 0.5 }));
+  el.position.set(doorW / 2, 0, 0);
+  group.add(el);
+
+  // Heavy Duty Outdoor Cabinet Swing Handle with Keyhole Latch Lock
+  const handleMat = mat(0x888888, 0.8, 0.3);
+  const handleBase = box(0.018, 0.120, 0.014, mat(0x283038, 0.7, 0.4), doorW - 0.045, -0.02, doorT / 2 + 0.007);
+  group.add(handleBase);
+  const handleLever = box(0.012, 0.090, 0.016, handleMat, doorW - 0.045, -0.03, doorT / 2 + 0.015);
+  group.add(handleLever);
+  const keyhole = box(0.004, 0.008, 0.002, mat(0x111111, 0.9, 0.2), doorW - 0.045, 0.02, doorT / 2 + 0.015);
+  group.add(keyhole);
+
+  // Ventilation Louvres on outer face (2 clusters: Upper for Subrack, Lower for Battery)
+  const louvreMat = mat(0x7e8e8e, 0.5, 0.7);
+  // Upper Subrack Louvres
+  for (let i = 0; i < 4; i++) {
+    const lv = box(doorW * 0.72, 0.012, 0.003, louvreMat, doorW / 2, 0.12 + i * 0.035, doorT / 2 + 0.002);
+    group.add(lv);
+  }
+  // Lower Battery Louvres
+  for (let i = 0; i < 4; i++) {
+    const lv = box(doorW * 0.72, 0.012, 0.003, louvreMat, doorW / 2, -0.32 - i * 0.035, doorT / 2 + 0.002);
+    group.add(lv);
+  }
+
+  // Pleated EU4 Air Filters on inside face (Matching site photos for both subrack & batteries)
+  const pleatMat = mat(0xe5e9ec, 0.2, 0.85);
+  const filterFrameMat = mat(0xbac2c6, 0.5, 0.5);
+
+  // 1. Upper Filter (Subrack)
+  const uFilterFrame = box(doorW * 0.76, CAB.H * 0.38, 0.012, filterFrameMat, doorW / 2, 0.17, -doorT / 2 - 0.006);
+  group.add(uFilterFrame);
+  for (let p = 0; p < 16; p++) {
+    const px = doorW / 2 - doorW * 0.33 + p * (doorW * 0.66 / 15);
+    const pleat = box(0.005, CAB.H * 0.35, 0.008, pleatMat, px, 0.17, -doorT / 2 - 0.008);
+    group.add(pleat);
+  }
+
+  // 2. Lower Filter (Lithium Battery Stack) - matches site photo media_1793092675674_4651e3e0
+  const lFilterFrame = box(doorW * 0.76, CAB.H * 0.36, 0.012, filterFrameMat, doorW / 2, -0.32, -doorT / 2 - 0.006);
+  group.add(lFilterFrame);
+  for (let p = 0; p < 16; p++) {
+    const px = doorW / 2 - doorW * 0.33 + p * (doorW * 0.66 / 15);
+    const pleat = box(0.005, CAB.H * 0.33, 0.008, pleatMat, px, -0.32, -doorT / 2 - 0.008);
+    group.add(pleat);
+  }
+
+  // Front Door Ground Bonding Stud on inner face (bottom left)
+  const doorGndStud = box(0.008, 0.008, 0.008, mat(0xd4dce4, 0.9, 0.2), 0.040, -0.480, -doorT / 2 - 0.004);
+  group.add(doorGndStud);
+
+  // Set initial open angle
+  group.rotation.y = -Math.PI / 3;  // ~-60°
+
+  return group;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  ODF PROCEDURAL TEXTURE GENERATORS
+// ═══════════════════════════════════════════════════════════
+
+// 1. AC Power Distribution & SPD Sub-Panel Texture (Matching Site Photo)
+function makeACPanelTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512; canvas.height = 768;
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = '#22262c';
+  ctx.fillRect(0, 0, 512, 768);
+
+  ctx.strokeStyle = '#3b434d';
+  ctx.lineWidth = 6;
+  ctx.strokeRect(10, 10, 492, 748);
+
+  // Header Texts
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 24px Arial';
+  ctx.fillText('AC INPUT', 45, 65);
+  ctx.fillText('SPD', 225, 65);
+
+  ctx.font = 'bold 16px Arial';
+  ctx.fillStyle = '#90a4ae';
+  ctx.fillText('ON', 60, 105);
+  ctx.fillText('OFF', 60, 310);
+  ctx.fillText('L      N', 125, 310);
+
+  // Bottom Section: AC OUTPUT 10A
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 22px Arial';
+  ctx.fillText('AC OUTPUT', 45, 385);
+  ctx.font = 'bold 15px Arial';
+  ctx.fillStyle = '#90a4ae';
+  ctx.fillText('10A 1P', 45, 410);
+
+  // Yellow High-Voltage Caution Warning Sign ⚠️ (ตรงตามรูปหน้างาน)
+  ctx.fillStyle = '#ffcc00';
+  ctx.fillRect(295, 480, 185, 230);
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = 5;
+  ctx.strokeRect(300, 485, 175, 220);
+
+  // Black Warning Triangle
+  ctx.fillStyle = '#000000';
+  ctx.beginPath();
+  ctx.moveTo(387, 510);
+  ctx.lineTo(330, 605);
+  ctx.lineTo(445, 605);
+  ctx.closePath();
+  ctx.fill();
+
+  // Exclamation point in triangle
+  ctx.fillStyle = '#ffcc00';
+  ctx.fillRect(384, 538, 7, 36);
+  ctx.fillRect(384, 584, 7, 9);
+
+  // Warning text
+  ctx.fillStyle = '#000000';
+  ctx.font = 'bold 16px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('CAUTION / คำเตือน', 387, 638);
+  ctx.font = 'bold 13px Arial';
+  ctx.fillText('HIGH VOLTAGE 220VAC', 387, 665);
+  ctx.font = '11px Arial';
+  ctx.fillText('อันตรายจากไฟฟ้าแรงสูง', 387, 685);
+  ctx.textAlign = 'left';
+
+  // Barcode / Spec sticker on bottom left
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(40, 640, 160, 70);
+  ctx.fillStyle = '#000000';
+  for (let b = 0; b < 28; b++) {
+    const bw = (b % 3 === 0) ? 4 : 2;
+    ctx.fillRect(50 + b * 5, 652, bw, 32);
+  }
+  ctx.font = '11px monospace';
+  ctx.fillText('TPC05-AC-DIST-220V', 50, 700);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  return tex;
+}
+
+// 2. Central Vertical ODF 48-Core SC/APC Adapter Spine Texture
+function makeODFSpineTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128; canvas.height = 1024;
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = '#f0f4f8';
+  ctx.fillRect(0, 0, 128, 1024);
+
+  ctx.strokeStyle = '#90a4ae';
+  ctx.lineWidth = 4;
+  ctx.strokeRect(4, 4, 120, 1016);
+
+  // Center vertical dividing line
+  ctx.beginPath();
+  ctx.moveTo(64, 8); ctx.lineTo(64, 1016);
+  ctx.stroke();
+
+  // Port group numbering (1-6 to 43-48) matching site photo
+  const labels = ['1-6', '7-12', '13-18', '19-24', '25-30', '31-36', '37-42', '43-48'];
+  ctx.fillStyle = '#1c252c';
+  ctx.font = 'bold 26px Arial';
+  ctx.textAlign = 'center';
+
+  labels.forEach((lbl, i) => {
+    const y = 80 + i * 118;
+    ctx.strokeStyle = '#b0bec5';
+    ctx.beginPath();
+    ctx.moveTo(10, y - 45); ctx.lineTo(118, y - 45);
+    ctx.stroke();
+
+    ctx.save();
+    ctx.translate(64, y);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText(lbl, 0, 9);
+    ctx.restore();
+  });
+
+  const tex = new THREE.CanvasTexture(canvas);
+  return tex;
+}
+
+// 3. Fiber Distribution Diagram for Door Pocket (ผังกระจายสายไฟเบอร์)
+function makeFiberDiagramTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512; canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, 512, 512);
+
+  ctx.strokeStyle = '#222222';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(10, 10, 492, 492);
+
+  ctx.fillStyle = '#000000';
+  ctx.font = 'bold 22px Arial';
+  ctx.fillText('Fiber Distribution Diagram', 28, 45);
+  ctx.font = '13px Arial';
+  ctx.fillStyle = '#555555';
+  ctx.fillText('UP LINK / DOWN LINK ROUTING SCHEDULE', 28, 70);
+
+  // Grid table matching photo
+  ctx.strokeStyle = '#666666';
+  ctx.lineWidth = 1;
+  for (let r = 0; r <= 8; r++) {
+    const y = 90 + r * 28;
+    ctx.beginPath();
+    ctx.moveTo(28, y); ctx.lineTo(484, y);
+    ctx.stroke();
+  }
+  for (let c = 0; c <= 4; c++) {
+    const x = 28 + c * 114;
+    ctx.beginPath();
+    ctx.moveTo(x, 90); ctx.lineTo(x, 314);
+    ctx.stroke();
+  }
+
+  // Diagram graphics below table
+  ctx.strokeStyle = '#0066cc';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(40, 345, 195, 125);
+  ctx.strokeRect(275, 345, 195, 125);
+  ctx.fillStyle = '#0066cc';
+  ctx.font = 'bold 14px Arial';
+  ctx.fillText('ODF 48-CORE TRAY', 60, 415);
+  ctx.fillText('SPLICE CASSETTE', 295, 415);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  return tex;
+}
+
+// 4. Installation & Operation Manual Sheet for Door Pocket (คู่มือติดตั้ง)
+function makeManualSheetTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512; canvas.height = 640;
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = '#f8fafc';
+  ctx.fillRect(0, 0, 512, 640);
+
+  // Header band
+  ctx.fillStyle = '#0071e3';
+  ctx.fillRect(0, 0, 512, 60);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 20px Arial';
+  ctx.fillText('TPC05-SP-OLT9U Operation Manual', 20, 38);
+
+  ctx.strokeStyle = '#b0bec5';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(20, 75, 472, 230);
+  ctx.strokeRect(20, 320, 472, 290);
+
+  ctx.fillStyle = '#263238';
+  ctx.font = 'bold 15px Arial';
+  ctx.fillText('1. Optical Fiber Cable Routing & Splicing', 35, 105);
+  ctx.fillText('2. AC/DC Electrical & Earthing System', 35, 350);
+
+  // Illustrated step diagrams matching photo
+  ctx.strokeStyle = '#ff9800';
+  ctx.lineWidth = 2.5;
+  ctx.strokeRect(45, 125, 125, 145);
+  ctx.strokeRect(190, 125, 125, 145);
+  ctx.strokeRect(335, 125, 125, 145);
+
+  ctx.fillStyle = '#546e7a';
+  ctx.font = '12px Arial';
+  ctx.fillText('Step A: Slacking', 55, 250);
+  ctx.fillText('Step B: Adapter', 200, 250);
+  ctx.fillText('Step C: Splicing', 345, 250);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  return tex;
+}
+
+// ── ODF Internal Compartment (Matching Site Photo Layout) ──
+function buildODFInternal() {
+  const g = new THREE.Group();
+  const yCenter = CAB.H * 0.175;
+  const odfX = HALF.W - 0.065; // recessed safely inside so door seals completely without bleed-through
+
+  // 1. Backing Plate & Mounting Chassis (Divider partition wall)
+  const chassisMat = mat(0xd4dce2, 0.5, 0.55);
+  const backW = CAB.D * 0.88; // 0.435m
+  const backH = CAB.H * 0.635; // 0.705m (fits within side door frame)
+  const chassis = box(0.012, backH, backW, chassisMat, odfX, yCenter, 0);
+  g.add(chassis);
+
+  const eg = new THREE.EdgesGeometry(new THREE.BoxGeometry(0.012, backH, backW));
+  const el = new THREE.LineSegments(eg, new THREE.LineBasicMaterial({ color: 0x90a4ae, transparent: true, opacity: 0.7 }));
+  el.position.set(odfX, yCenter, 0);
+  g.add(el);
+
+  // Surface mounting X coordinate (components sit facing +X)
+  const sX = odfX + 0.006;
+
+  // ──────────────────────────────────────────
+  // 2. Top Fiber Slack Storage Spools (วงล้อเก็บสแล็คสายไฟเบอร์คู่ด้านบน)
+  // ──────────────────────────────────────────
+  const spoolWhiteMat = mat(0xf0f3f6, 0.3, 0.7);
+  const fiberTubeMat = mat(0xf5b700, 0.4, 0.6); // yellow single-mode fiber patch cord
+
+  const topSpoolY = yCenter + 0.260;
+  [-0.055, 0.055].forEach(sz => {
+    // Cylindrical spool drum
+    const spool = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.026, 0.016, 24), spoolWhiteMat);
+    spool.rotation.z = Math.PI / 2;
+    spool.position.set(sX + 0.008, topSpoolY, sz);
+    g.add(spool);
+
+    // Front retaining flange disk
+    const flange = new THREE.Mesh(new THREE.CylinderGeometry(0.030, 0.030, 0.002, 24), spoolWhiteMat);
+    flange.rotation.z = Math.PI / 2;
+    flange.position.set(sX + 0.016, topSpoolY, sz);
+    g.add(flange);
+  });
+
+  // Loops of yellow optical fiber wound around the two spools
+  for (let l = 0; l < 8; l++) {
+    const loopCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(sX + 0.010, topSpoolY - 0.026, -0.055),
+      new THREE.Vector3(sX + 0.010, topSpoolY - 0.028, 0.000),
+      new THREE.Vector3(sX + 0.010, topSpoolY - 0.026, 0.055),
+      new THREE.Vector3(sX + 0.010, topSpoolY, 0.080),
+      new THREE.Vector3(sX + 0.010, topSpoolY + 0.026, 0.055),
+      new THREE.Vector3(sX + 0.010, topSpoolY + 0.028, 0.000),
+      new THREE.Vector3(sX + 0.010, topSpoolY + 0.026, -0.055),
+      new THREE.Vector3(sX + 0.010, topSpoolY, -0.080),
+    ], true);
+    const loopTube = new THREE.Mesh(new THREE.TubeGeometry(loopCurve, 24, 0.0015, 6, true), fiberTubeMat);
+    loopTube.position.x += (l % 2 === 0 ? 0.001 : -0.001);
+    loopTube.position.y += (l * 0.0015 - 0.005);
+    g.add(loopTube);
+  }
+
+  // ──────────────────────────────────────────
+  // 3. Central Vertical ODF 48-Core SC/APC Adapter Bracket (แถบอะแดปเตอร์แนวตั้ง 1-48)
+  // ──────────────────────────────────────────
+  const odfPanelY = yCenter + 0.115;
+  const odfPanelH = 0.200;
+  const odfSpineW = 0.018;
+
+  // Vertical spine bracket with printed numbering (1-6 to 43-48)
+  const odfSpineMat = new THREE.MeshStandardMaterial({
+    map: makeODFSpineTexture(),
+    roughness: 0.35,
+    metalness: 0.1
+  });
+  const spineMesh = new THREE.Mesh(new THREE.PlaneGeometry(odfPanelH, odfSpineW), odfSpineMat);
+  spineMesh.rotation.y = Math.PI / 2;
+  spineMesh.rotation.x = Math.PI / 2;
+  spineMesh.position.set(sX + 0.022, odfPanelY, 0);
+  g.add(spineMesh);
+
+  // Rear mounting bracket column supporting the spine
+  const bracketCol = box(0.022, odfPanelH + 0.015, 0.016, mat(0xc8d0d6, 0.7, 0.3), sX + 0.011, odfPanelY, 0);
+  g.add(bracketCol);
+
+  // 8 Rows of SC/APC Adapters & Connector Boots (Green) on Left & Right
+  const scApcGreenMat = mat(0x00cc44, 0.25, 0.75, 0x00ff44, 0.35); // bright SC/APC green
+  const connectorBodyMat = mat(0x009933, 0.3, 0.7);
+  const bootRubberMat = mat(0x006622, 0.5, 0.6);
+
+  const rowCount = 8;
+  const rowSpacing = odfPanelH / rowCount;
+  for (let r = 0; r < rowCount; r++) {
+    const ry = odfPanelY + odfPanelH / 2 - (r + 0.5) * rowSpacing;
+
+    // Left Adapter & Right Adapter
+    [-1, 1].forEach(side => {
+      const az = side * 0.018;
+      // SC/APC Duplex/Single Adapter Housing
+      const adapter = box(0.010, 0.010, 0.011, scApcGreenMat, sX + 0.018, ry, az);
+      g.add(adapter);
+
+      // SC Connector Plug Body
+      const plug = box(0.010, 0.008, 0.008, connectorBodyMat, sX + 0.023, ry, az + side * 0.006);
+      g.add(plug);
+
+      // Green Strain Relief Boot
+      const boot = box(0.008, 0.006, 0.006, bootRubberMat, sX + 0.027, ry, az + side * 0.012);
+      g.add(boot);
+
+      // Yellow Fiber Jumpers fanning out from the boot
+      const fStartX = sX + 0.028;
+      const fStartY = ry;
+      const fStartZ = az + side * 0.016;
+      const fMidZ   = side > 0 ? (fStartZ + 0.038 + r * 0.006) : (fStartZ - 0.032 - r * 0.005);
+      const fMidY   = ry - 0.022 - r * 0.008;
+      const fEndZ   = side > 0 ? (fStartZ + 0.065 + r * 0.005) : (fStartZ - 0.055);
+      const fEndY   = yCenter - 0.035 - r * 0.010;
+
+      const fCurve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(fStartX, fStartY, fStartZ),
+        new THREE.Vector3(sX + 0.022, fMidY, fMidZ),
+        new THREE.Vector3(sX + 0.016, fEndY, fEndZ)
+      ]);
+      const fMesh = new THREE.Mesh(new THREE.TubeGeometry(fCurve, 12, 0.0013, 6, false), fiberTubeMat);
+      g.add(fMesh);
+
+      // White Marker Flag on some jumpers (as seen in photo)
+      if (r === 2 || r === 4 || r === 6) {
+        const flag = box(0.001, 0.012, 0.008, mat(0xfafcfe, 0.2, 0.8), sX + 0.023, fMidY, fMidZ);
+        g.add(flag);
+      }
+    });
+  }
+
+  // ──────────────────────────────────────────
+  // 4. Right-side Fiber Retention Spools (หูร้อยสายไฟเบอร์ครึ่งวงกลม)
+  // ──────────────────────────────────────────
+  [yCenter + 0.15, yCenter + 0.03].forEach(ry => {
+    const spoolCurve = new THREE.Mesh(new THREE.CylinderGeometry(0.020, 0.020, 0.016, 16, 1, true, -Math.PI / 2, Math.PI), spoolWhiteMat);
+    spoolCurve.rotation.z = Math.PI / 2;
+    spoolCurve.position.set(sX + 0.008, ry, -0.095);
+    g.add(spoolCurve);
+  });
+
+  // ──────────────────────────────────────────
+  // 5. White Fiber Splice Tray / Cassette with Black Velcro Strap (ถาดสไปรซ์ไฟเบอร์)
+  // ──────────────────────────────────────────
+  const cassetteY = yCenter - 0.020;
+  const cassetteW = 0.125;
+  const cassetteH = 0.065;
+  const cassetteT = 0.016;
+
+  // Off-white plastic cassette body
+  const cassette = box(cassetteT, cassetteH, cassetteW, mat(0xe8ecef, 0.35, 0.7), sX + cassetteT / 2, cassetteY, 0);
+  g.add(cassette);
+  const cEdge = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(cassetteT, cassetteH, cassetteW)),
+    new THREE.LineBasicMaterial({ color: 0xb0bec5, transparent: true, opacity: 0.8 }));
+  cEdge.position.set(sX + cassetteT / 2, cassetteY, 0);
+  g.add(cEdge);
+
+  // Black Velcro Retaining Strap (ตีนตุ๊กแกสีดำ รัดตรงกลางถาด)
+  const velcro = box(cassetteT + 0.003, cassetteH + 0.004, 0.016, mat(0x141618, 0.9, 0.25), sX + cassetteT / 2, cassetteY, -0.018);
+  g.add(velcro);
+
+  // ──────────────────────────────────────────
+  // 6. Bottom-Left AC Power Distribution & SPD Box (ตู้ไฟ AC ย่อย)
+  // ──────────────────────────────────────────
+  const acBoxY = yCenter - 0.170;
+  const acBoxZ = 0.090;
+  const acBoxW = 0.140;
+  const acBoxH = 0.215;
+  const acBoxT = 0.016;
+
+  // Main Charcoal Steel AC Box
+  const acBox = box(acBoxT, acBoxH, acBoxW, mat(0x24282e, 0.6, 0.45), sX + acBoxT / 2, acBoxY, acBoxZ);
+  g.add(acBox);
+  const acEdge = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(acBoxT, acBoxH, acBoxW)),
+    new THREE.LineBasicMaterial({ color: 0x4f5b66, transparent: true, opacity: 0.8 }));
+  acEdge.position.set(sX + acBoxT / 2, acBoxY, acBoxZ);
+  g.add(acEdge);
+
+  // AC Panel Printed Faceplate (Text: AC INPUT, SPD, AC OUTPUT, Warning ⚠️, Barcode)
+  const acFaceMat = new THREE.MeshStandardMaterial({
+    map: makeACPanelTexture(),
+    roughness: 0.4,
+    metalness: 0.1
+  });
+  const acFace = new THREE.Mesh(new THREE.PlaneGeometry(acBoxH - 0.004, acBoxW - 0.004), acFaceMat);
+  acFace.rotation.y = Math.PI / 2;
+  acFace.rotation.x = Math.PI / 2;
+  acFace.position.set(sX + acBoxT + 0.0005, acBoxY, acBoxZ);
+  g.add(acFace);
+
+  // 4 Corner Screws on AC Panel
+  const acScrewMat = mat(0xd4dce4, 0.9, 0.2);
+  [-1, 1].forEach(sy => {
+    [-1, 1].forEach(sz => {
+      const scr = box(0.002, 0.005, 0.005, acScrewMat, sX + acBoxT + 0.001, acBoxY + sy * (acBoxH / 2 - 0.012), acBoxZ + sz * (acBoxW / 2 - 0.012));
+      g.add(scr);
+    });
+  });
+
+  // Physical 3D Breakers on AC Panel
+  // Top: 2-Pole Blue AC INPUT MCB
+  const mcbBlueMat = mat(0x0072d6, 0.4, 0.6);
+  const mcbGreyMat = mat(0xd8e0e6, 0.5, 0.5);
+  const acInMcb = box(0.008, 0.036, 0.024, mcbGreyMat, sX + acBoxT + 0.004, acBoxY + 0.048, acBoxZ + 0.030);
+  g.add(acInMcb);
+  const acInLever = box(0.010, 0.010, 0.020, mcbBlueMat, sX + acBoxT + 0.007, acBoxY + 0.052, acBoxZ + 0.030);
+  g.add(acInLever);
+
+  // Top: 2-Module SPD with Green status flags
+  const spdBox = box(0.008, 0.036, 0.022, mcbGreyMat, sX + acBoxT + 0.004, acBoxY + 0.048, acBoxZ - 0.002);
+  g.add(spdBox);
+  [-0.005, 0.005].forEach(dz => {
+    const spdFlag = box(0.010, 0.007, 0.006, mat(0x00cc44, 0.2, 0.8, 0x00ff44, 0.6), sX + acBoxT + 0.006, acBoxY + 0.054, acBoxZ - 0.002 + dz);
+    g.add(spdFlag);
+  });
+
+  // Bottom: 1-Pole Blue AC OUTPUT MCB
+  const acOutMcb = box(0.008, 0.036, 0.012, mcbGreyMat, sX + acBoxT + 0.004, acBoxY - 0.042, acBoxZ + 0.038);
+  g.add(acOutMcb);
+  const acOutLever = box(0.010, 0.010, 0.009, mcbBlueMat, sX + acBoxT + 0.007, acBoxY - 0.038, acBoxZ + 0.038);
+  g.add(acOutLever);
+
+  // Bottom: 3-Pin Universal Utility AC Outlet Socket
+  const sockBody = box(0.008, 0.034, 0.034, mat(0xf0f3f6, 0.3, 0.7), sX + acBoxT + 0.004, acBoxY - 0.042, acBoxZ + 0.002);
+  g.add(sockBody);
+  const sockHoleMat = mat(0x181818, 0.9, 0.2);
+  const holeE = box(0.009, 0.006, 0.003, sockHoleMat, sX + acBoxT + 0.005, acBoxY - 0.036, acBoxZ + 0.002);
+  const holeL = box(0.009, 0.005, 0.003, sockHoleMat, sX + acBoxT + 0.005, acBoxY - 0.048, acBoxZ + 0.008);
+  const holeN = box(0.009, 0.005, 0.003, sockHoleMat, sX + acBoxT + 0.005, acBoxY - 0.048, acBoxZ - 0.005);
+  g.add(holeE); g.add(holeL); g.add(holeN);
+
+  // ──────────────────────────────────────────
+  // 7. Bottom-Center Ground Busbar & PE Ring Lug (บาร์กราวด์แนวตั้ง)
+  // ──────────────────────────────────────────
+  const gndBarZ = 0.005;
+  const gndBarY = yCenter - 0.190;
+  const gndBarL = 0.160;
+  const gndBarW = 0.016;
+  const gndBarT = 0.004;
+
+  const gndBar = box(gndBarT, gndBarL, gndBarW, mat(0xc8d0d8, 0.85, 0.2), sX + gndBarT / 2, gndBarY, gndBarZ);
+  g.add(gndBar);
+
+  const lugBootGreen = mat(0x009e3e, 0.4, 0.55);
+  const tinnedLugMat = mat(0xd4dce4, 0.9, 0.2);
+  const redTorqueMat = mat(0xd61818, 0.3, 0.7);
+
+  // 8 M6 Phillips Screw Studs along the Ground Bar
+  for (let s = 0; s < 8; s++) {
+    const sy = gndBarY + gndBarL / 2 - (s + 0.5) * (gndBarL / 8);
+    const screw = box(0.003, 0.006, 0.006, acScrewMat, sX + gndBarT + 0.001, sy, gndBarZ);
+    g.add(screw);
+
+    // Green ring terminal lug clamped under screws (matching photo)
+    if (s === 1 || s === 4 || s === 6) {
+      const ringLug = box(0.002, 0.007, 0.007, tinnedLugMat, sX + gndBarT + 0.001, sy, gndBarZ);
+      const boot = box(0.004, 0.010, 0.004, lugBootGreen, sX + gndBarT + 0.003, sy, gndBarZ - 0.006);
+      g.add(ringLug);
+      g.add(boot);
+
+      // Red QC torque mark
+      const redQC = box(0.004, 0.001, 0.006, redTorqueMat, sX + gndBarT + 0.002, sy, gndBarZ);
+      g.add(redQC);
+    }
+  }
+
+  // Green-Yellow PE Ground Wire from AC Box to Ground Bar
+  const gndWireMat = mat(0x43a047, 0.4, 0.6);
+  const acGndCurve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(sX + acBoxT, acBoxY - 0.070, acBoxZ - 0.020),
+    new THREE.Vector3(sX + 0.010, acBoxY - 0.090, gndBarZ + 0.018),
+    new THREE.Vector3(sX + gndBarT + 0.002, gndBarY + 0.050, gndBarZ)
+  ]);
+  const acGndWire = new THREE.Mesh(new THREE.TubeGeometry(acGndCurve, 12, 0.0020, 6, false), gndWireMat);
+  g.add(acGndWire);
+
+  // ──────────────────────────────────────────
+  // 8. Bottom-Right Equipment U-Bracket & Fiber Buffer Tube Ingress (ขายึดและแคล้มป์สายเคเบิล)
+  // ──────────────────────────────────────────
+  const uBracketZ = -0.085;
+  const uBracketY = yCenter - 0.140;
+  const uBracket = box(0.024, 0.090, 0.070, mat(0xadb8c2, 0.65, 0.4), sX + 0.012, uBracketY, uBracketZ);
+  g.add(uBracket);
+
+  // Stainless cable entry clamps at bottom
+  const clampY = yCenter - 0.270;
+  const clamp = box(0.012, 0.022, 0.080, mat(0x9aa7b2, 0.8, 0.25), sX + 0.006, clampY, -0.040);
+  g.add(clamp);
+
+  // Multi-color optical loose tube cables (blue, orange, green buffer tubes entering from bottom)
+  const tubeColors = [0x0072d6, 0xff7700, 0x00b844, 0x8855bb];
+  tubeColors.forEach((color, idx) => {
+    const bCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(sX + 0.008, clampY - 0.035, -0.055 + idx * 0.012),
+      new THREE.Vector3(sX + 0.010, clampY + 0.025, -0.050 + idx * 0.010),
+      new THREE.Vector3(sX + 0.009, cassetteY - 0.035, -0.025 + idx * 0.008)
+    ]);
+    const bMesh = new THREE.Mesh(new THREE.TubeGeometry(bCurve, 12, 0.0018, 6, false), mat(color, 0.3, 0.7));
+    g.add(bMesh);
+  });
+
+  return g;
+}
+
+// ── Side Door (ODF) with Inner Door Documents & Ground Strap ──
+function buildSideDoor(cabColor) {
+  const group = new THREE.Group();
+  // Pivot at rear-right edge (hinge at back, opens from left to right when viewing from side)
+  group.position.set(HALF.W, CAB.H * 0.175, -HALF.D + 0.008);
+
+  const doorLength = CAB.D - 0.010; // 0.485m
+  const doorHeight = CAB.H * 0.655; // 0.727m (covers entire side ODF opening completely)
+  const doorThickness = 0.014;
+
+  // Solid opaque steel door panel (absolutely no glass, completely hides ODF inside when closed)
+  const doorMat = mat(cabColor, 0.45, 0.55);
+  const d = box(doorThickness, doorHeight, doorLength, doorMat, 0, 0, doorLength / 2);
+  group.add(d);
+
+  // Door edges
+  const eg = new THREE.EdgesGeometry(new THREE.BoxGeometry(doorThickness, doorHeight, doorLength));
+  const el = new THREE.LineSegments(eg, new THREE.LineBasicMaterial({ color: 0x4a5454, transparent: true, opacity: 0.5 }));
+  el.position.set(0, 0, doorLength / 2);
+  group.add(el);
+
+  // Handle (solid steel handle on outside face)
+  const handleMat = mat(0x888888, 0.8, 0.3);
+  const handle = box(0.018, 0.08, 0.012, handleMat, doorThickness / 2 + 0.008, 0, doorLength - 0.05);
+  group.add(handle);
+
+  // Louvre ventilation slats on outer face
+  const louvreMat = mat(0x7e8e8e, 0.5, 0.7);
+  for (let i = 0; i < 4; i++) {
+    const lv = box(0.003, 0.012, doorLength * 0.7, louvreMat, doorThickness / 2 + 0.002, -0.10 - i * 0.035, doorLength / 2);
+    group.add(lv);
+  }
+
+  // EPDM Black Rubber Gasket Seal around inner door rim
+  const gasketMat = mat(0x181818, 0.8, 0.2);
+  const gasket = new THREE.LineSegments(
+    new THREE.EdgesGeometry(new THREE.BoxGeometry(0.004, doorHeight - 0.02, doorLength - 0.02)),
+    new THREE.LineBasicMaterial({ color: 0x111111, linewidth: 2 })
+  );
+  gasket.position.set(-doorThickness / 2 - 0.001, 0, doorLength / 2);
+  group.add(gasket);
+
+  // ──────────────────────────────────────────
+  // Inner Door Pockets & Reference Documents (Matching Site Photo)
+  // ──────────────────────────────────────────
+  const clearVinylMat = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.35,
+    roughness: 0.2,
+    metalness: 0.1
+  });
+
+  // Top Document Pocket: Fiber Distribution Diagram (ผังกระจายสายไฟเบอร์)
+  const diagPocketH = 0.170;
+  const diagPocketW = doorLength * 0.60;
+  const diagY = doorHeight * 0.20;
+  const diagZ = doorLength * 0.46;
+
+  const diagPaper = new THREE.Mesh(new THREE.PlaneGeometry(diagPocketH - 0.01, diagPocketW - 0.01),
+    new THREE.MeshStandardMaterial({ map: makeFiberDiagramTexture(), roughness: 0.4 }));
+  diagPaper.rotation.y = -Math.PI / 2;
+  diagPaper.rotation.x = Math.PI / 2;
+  diagPaper.position.set(-doorThickness / 2 - 0.0012, diagY, diagZ);
+  group.add(diagPaper);
+
+  const diagPocket = box(0.002, diagPocketH, diagPocketW, clearVinylMat, -doorThickness / 2 - 0.002, diagY, diagZ);
+  group.add(diagPocket);
+
+  // Bottom Document Pocket: Installation & Operation Manual Sheet (คู่มือติดตั้ง)
+  const manualPocketH = 0.190;
+  const manualPocketW = doorLength * 0.60;
+  const manualY = -doorHeight * 0.14;
+  const manualZ = doorLength * 0.46;
+
+  const manualPaper = new THREE.Mesh(new THREE.PlaneGeometry(manualPocketH - 0.01, manualPocketW - 0.01),
+    new THREE.MeshStandardMaterial({ map: makeManualSheetTexture(), roughness: 0.4 }));
+  manualPaper.rotation.y = -Math.PI / 2;
+  manualPaper.rotation.x = Math.PI / 2;
+  manualPaper.position.set(-doorThickness / 2 - 0.0012, manualY, manualZ);
+  group.add(manualPaper);
+
+  const manualPocket = box(0.002, manualPocketH, manualPocketW, clearVinylMat, -doorThickness / 2 - 0.002, manualY, manualZ);
+  group.add(manualPocket);
+
+  // Door Ground Bonding Stud with Yellow Ground Sticker (⏚) & Green Ring Lug (ตรงตามรูป)
+  const studY = -doorHeight * 0.32;
+  const studZ = doorLength * 0.16;
+  const doorStud = box(0.006, 0.008, 0.008, mat(0xd4dce4, 0.9, 0.2), -doorThickness / 2 - 0.003, studY, studZ);
+  group.add(doorStud);
+
+  // Yellow Ground Symbol sticker (⏚) on door frame
+  const gndSignCanvas = document.createElement('canvas');
+  gndSignCanvas.width = 64; gndSignCanvas.height = 64;
+  const sctx = gndSignCanvas.getContext('2d');
+  sctx.fillStyle = '#ffcc00'; sctx.fillRect(0, 0, 64, 64);
+  sctx.strokeStyle = '#000000'; sctx.lineWidth = 4;
+  sctx.strokeRect(3, 3, 58, 58);
+  sctx.beginPath(); sctx.arc(32, 32, 22, 0, Math.PI * 2); sctx.stroke();
+  sctx.beginPath();
+  sctx.moveTo(32, 16); sctx.lineTo(32, 35);
+  sctx.moveTo(20, 35); sctx.lineTo(44, 35);
+  sctx.moveTo(24, 40); sctx.lineTo(40, 40);
+  sctx.moveTo(28, 45); sctx.lineTo(36, 45);
+  sctx.stroke();
+  const doorGndSign = new THREE.Mesh(new THREE.PlaneGeometry(0.014, 0.014),
+    new THREE.MeshStandardMaterial({ map: new THREE.CanvasTexture(gndSignCanvas), roughness: 0.3 }));
+  doorGndSign.rotation.y = -Math.PI / 2;
+  doorGndSign.position.set(-doorThickness / 2 - 0.001, studY - 0.014, studZ);
+  group.add(doorGndSign);
+
+  // Ring terminal lug with green boot on door ground stud
+  const doorLug = box(0.002, 0.008, 0.008, mat(0xd4dce4, 0.9, 0.2), -doorThickness / 2 - 0.002, studY, studZ);
+  const doorBoot = box(0.004, 0.010, 0.004, mat(0x009e3e, 0.4, 0.55), -doorThickness / 2 - 0.003, studY + 0.007, studZ);
+  group.add(doorLug);
+  group.add(doorBoot);
+
+  // Initial open state: rotated OUTWARDS around Y axis
+  group.rotation.y = Math.PI * 0.4;  // ~ +72° open outward from left to right
+
+  return group;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  INTERNAL COMPONENTS
+// ═══════════════════════════════════════════════════════════
+function buildInternals() {
+  const U = 0.048;
+  const IW = CAB.W - 0.04;  // inner width
+  const ID = CAB.D - 0.06;  // inner depth
+  const X = 0;
+  const frontZ = HALF.D - 0.04;
+
+  // ── Battery Stack: 2x Lithium Batteries stacked vertically (matching site photo) ──
+  {
+    const g = new THREE.Group();
+    const battH = 0.11;       // height of each battery pack
+    const battW = IW * 0.90;   // main width
+    const battD = ID * 0.85;   // depth
+    const shelfY = -HALF.H + 0.045;
+
+    // Bottom cable entry plate & white cable glands
+    const glandPlate = box(IW * 0.96, 0.008, ID * 0.88, mat(0x3a4248, 0.5, 0.6), X, -HALF.H + 0.018, -0.01);
+    g.add(glandPlate);
+    for (let p = 0; p < 5; p++) {
+      const gx = -0.16 + p * 0.08;
+      const gland = box(0.024, 0.014, 0.024, mat(0xe8ecef, 0.2, 0.8), gx, -HALF.H + 0.026, frontZ - 0.05);
+      g.add(gland);
+      const gc = box(0.012, 0.020, 0.012, mat(0x181a1c, 0.7, 0.4), gx, -HALF.H + 0.012, frontZ - 0.05);
+      g.add(gc);
+    }
+
+    // Heavy duty steel battery shelf tray
+    const shelf = box(IW * 0.96, 0.014, ID * 0.88, mat(0x22262a, 0.6, 0.5), X, shelfY, -0.01);
+    g.add(shelf);
+    const seg = new THREE.EdgesGeometry(new THREE.BoxGeometry(IW * 0.96, 0.014, ID * 0.88));
+    const sel = new THREE.LineSegments(seg, new THREE.LineBasicMaterial({ color: 0x3d474f, transparent: true, opacity: 0.7 }));
+    sel.position.set(X, shelfY, -0.01);
+    g.add(sel);
+
+    // Front safety retaining angle bracket
+    const retainBar = box(IW * 0.94, 0.022, 0.006, mat(0x353d45, 0.6, 0.5), X, shelfY + 0.012, frontZ - 0.015);
+    g.add(retainBar);
+
+    // Materials for the Lithium Battery packs
+    const battChassisMat = mat(0x1a1c1e, 0.7, 0.45);
+    const finMat = mat(0x131416, 0.85, 0.35);
+    const subPanelMat = mat(0x24282c, 0.55, 0.6);
+    const labelWhiteMat = mat(0xf2f4f7, 0.2, 0.85);
+    const labelYellowMat = mat(0xe5a800, 0.3, 0.8, 0xffbb00, 0.25);
+    const logoPlateMat = mat(0x2c2e30, 0.8, 0.3, 0x998855, 0.15);
+    const redBootMat = mat(0xd62828, 0.4, 0.5, 0x550000, 0.2);
+    const blackBootMat = mat(0x181818, 0.8, 0.4);
+    const dcCableMat = mat(0x141416, 0.8, 0.4);
+    const gndWireMat = mat(0x88cc00, 0.3, 0.8);
+
+    // Build 2 stacked battery packs (k=0 bottom, k=1 top)
+    for (let k = 0; k < 2; k++) {
+      const by = shelfY + 0.01 + battH / 2 + k * (battH + 0.007);
+      const bz = -0.01;
+      const bFront = frontZ - 0.015;
+
+      // 1. Main battery chassis
+      const pack = box(battW, battH, battD, battChassisMat, X, by, bz);
+      g.add(pack);
+      const eg = new THREE.EdgesGeometry(new THREE.BoxGeometry(battW, battH, battD));
+      const el = new THREE.LineSegments(eg, new THREE.LineBasicMaterial({ color: 0x3d474f, transparent: true, opacity: 0.7 }));
+      el.position.set(X, by, bz);
+      g.add(el);
+
+      // 2. Rack mounting ears (Left & Right)
+      [-1, 1].forEach(side => {
+        const ear = box(0.018, battH, 0.006, mat(0x2c333a, 0.7, 0.4), side * (battW / 2 + 0.009), by, bFront);
+        g.add(ear);
+        // Screws
+        [-0.035, 0.035].forEach(sy => {
+          const sc = box(0.006, 0.006, 0.003, mat(0xaaaaaa, 0.9, 0.2), side * (battW / 2 + 0.009), by + sy, bFront + 0.003);
+          g.add(sc);
+        });
+      });
+
+      // 3. Center Ribbed Heatsink Fins (vertical ridges)
+      const finCount = 20;
+      const finAreaW = battW * 0.48;
+      const finSpacing = finAreaW / finCount;
+      const finStartX = -finAreaW / 2 + 0.01;
+      for (let f = 0; f < finCount; f++) {
+        const fx = finStartX + f * finSpacing;
+        const fin = box(0.003, battH * 0.84, 0.006, finMat, fx, by, bFront + 0.003);
+        g.add(fin);
+      }
+
+      // 4. Center Badges (Logo badge + Yellow Warning Label)
+      // Top center logo badge
+      const logoBadge = box(0.052, 0.022, 0.004, logoPlateMat, 0.005, by + 0.024, bFront + 0.007);
+      g.add(logoBadge);
+      // Bottom center yellow caution label
+      const warnBadge = box(0.11, 0.013, 0.004, labelYellowMat, 0.005, by - 0.026, bFront + 0.007);
+      g.add(warnBadge);
+
+      // 5. Left BMS Panel (communication ports & status LEDs)
+      const bmsX = -battW * 0.36;
+      const bmsPanel = box(battW * 0.22, battH * 0.86, 0.005, subPanelMat, bmsX, by, bFront + 0.002);
+      g.add(bmsPanel);
+      // RJ45 comms sockets
+      [-0.015, 0.015].forEach(dy => {
+        const port = box(0.016, 0.014, 0.004, mat(0x555c63, 0.7, 0.3), bmsX - 0.02, by + dy, bFront + 0.005);
+        g.add(port);
+      });
+      // Status LEDs (Run = green, Alm = red)
+      const ledRun = box(0.005, 0.005, 0.003, mat(0x00ff44, 0.3, 0.8, 0x00ff44, 1.0), bmsX + 0.02, by + 0.02, bFront + 0.005);
+      const ledAlm = box(0.005, 0.005, 0.003, mat(0xff3300, 0.3, 0.8, 0x330000, 0.2), bmsX + 0.02, by - 0.01, bFront + 0.005);
+      g.add(ledRun);
+      g.add(ledAlm);
+      // Grounding wire (yellow-green striped) on the left
+      const gndWire = box(0.004, battH * 0.6, 0.004, gndWireMat, bmsX - 0.045, by - 0.02, bFront + 0.004);
+      g.add(gndWire);
+
+      // 6. Right DC Power Terminals (+ and -)
+      const termX = battW * 0.36;
+      const termPanel = box(battW * 0.22, battH * 0.86, 0.005, subPanelMat, termX, by, bFront + 0.002);
+      g.add(termPanel);
+      // Positive Terminal (+) Red
+      const posTerm = box(0.016, 0.022, 0.014, redBootMat, termX - 0.015, by + 0.018, bFront + 0.008);
+      g.add(posTerm);
+      // Negative Terminal (-) Black
+      const negTerm = box(0.016, 0.022, 0.014, blackBootMat, termX - 0.015, by - 0.020, bFront + 0.008);
+      g.add(negTerm);
+      // Heavy DC power cables exiting to the right conduit
+      const dcCablePos = box(0.04, 0.012, 0.012, dcCableMat, termX + 0.02, by + 0.018, bFront + 0.008);
+      const dcCableNeg = box(0.04, 0.012, 0.012, dcCableMat, termX + 0.02, by - 0.020, bFront + 0.008);
+      g.add(dcCablePos);
+      g.add(dcCableNeg);
+      // Vertical cable run along right side wall
+      const vertCable = box(0.016, battH * 1.2, 0.025, dcCableMat, HALF.W - 0.04, by, bFront);
+      g.add(vertCable);
+
+      // 7. Specification label sticker on top of upper battery (k = 1)
+      if (k === 1) {
+        const topSticker = box(0.12, 0.002, 0.07, labelWhiteMat, -0.06, by + battH / 2 + 0.001, 0.04);
+        g.add(topSticker);
+      }
+    }
+
+    internalGroup.batt = g;
+    cabinetGroup.add(g);
+  }
+
+  // ── OLT / FWDM / EDFA Subrack Section (Matching Field Equipment & Front Bayface Textures) ──
+  {
+    const g = new THREE.Group();
+    const uH = 0.0436;         // 1U standard height = 43.6mm
+    const chassisW = 0.442;    // 19" chassis width between rack ears = 442mm
+    const earW = 0.020;        // 19" rack ear flange width = 20mm
+    const eqD = 0.230;         // chassis depth = 230mm
+    const fZ = frontZ - 0.015; // front face Z position
+    const cZ = fZ - eqD / 2;   // chassis center Z position
+
+    // 1U stack vertical positions (EDFA -> FWDM -> ZTE C610)
+    const yEDFA = -0.220;
+    const yFWDM = -0.170;
+    const yOLT  = -0.120;
+
+    const texLoader = new THREE.TextureLoader();
+
+    // Helper to build 1U unit with front bayface texture plane & 19" rack ears
+    function build1UUnit(name, yPos, textureDataUri, chassisColor, metalness, roughness) {
+      const uGroup = new THREE.Group();
+
+      // 1. Main Metal Chassis Box (behind front bayface)
+      const bodyMat = mat(chassisColor, roughness || 0.4, metalness || 0.5);
+      const body = box(chassisW, uH - 0.002, eqD, bodyMat, X, yPos, cZ);
+      uGroup.add(body);
+
+      // Chassis edge outline
+      const edgeGeo = new THREE.EdgesGeometry(new THREE.BoxGeometry(chassisW, uH - 0.002, eqD));
+      const edgeLine = new THREE.LineSegments(edgeGeo, new THREE.LineBasicMaterial({
+        color: 0x4a545e,
+        transparent: true,
+        opacity: 0.6
+      }));
+      edgeLine.position.set(X, yPos, cZ);
+      uGroup.add(edgeLine);
+
+      // 2. 19-Inch Left & Right Rack Mounting Ears with M6 Screws
+      const earMat = mat(0x283038, 0.65, 0.45);
+      const screwMat = mat(0xd4dce4, 0.85, 0.25); // silver metallic screws
+      [-1, 1].forEach(side => {
+        const earX = side * (chassisW / 2 + earW / 2);
+        const ear = box(earW, uH, 0.005, earMat, earX, yPos, fZ - 0.0025);
+        uGroup.add(ear);
+
+        // Rack mounting screws (top & bottom slots)
+        [-0.012, 0.012].forEach(sy => {
+          const screw = box(0.007, 0.007, 0.003, screwMat, earX, yPos + sy, fZ + 0.001);
+          uGroup.add(screw);
+          const notch = box(0.005, 0.0015, 0.001, mat(0x222222, 0.9, 0.1), earX, yPos + sy, fZ + 0.0026);
+          uGroup.add(notch);
+        });
+      });
+
+      // 3. Front Bayface Texture Plane (Photo-real high-res front panel)
+      if (typeof PANEL_TEXTURES !== 'undefined' && textureDataUri) {
+        const tex = texLoader.load(textureDataUri);
+        tex.minFilter = THREE.LinearFilter;
+        tex.magFilter = THREE.LinearFilter;
+        tex.generateMipmaps = true;
+
+        const faceGeo = new THREE.PlaneGeometry(chassisW, uH - 0.002);
+        const faceMat = new THREE.MeshStandardMaterial({
+          map: tex,
+          roughness: 0.35,
+          metalness: 0.12,
+          side: THREE.FrontSide
+        });
+        const faceMesh = new THREE.Mesh(faceGeo, faceMat);
+        faceMesh.position.set(X, yPos, fZ + 0.001);
+        uGroup.add(faceMesh);
+
+        // Subtle dark bezel border around the bayface
+        const bezelGeo = new THREE.EdgesGeometry(faceGeo);
+        const bezelLine = new THREE.LineSegments(bezelGeo, new THREE.LineBasicMaterial({
+          color: 0x11161a,
+          transparent: true,
+          opacity: 0.8
+        }));
+        bezelLine.position.set(X, yPos, fZ + 0.0015);
+        uGroup.add(bezelLine);
+      }
+
+      return uGroup;
+    }
+
+    // Build the 3 units with real textures
+    const edfaGroup = build1UUnit('edfa', yEDFA, typeof PANEL_TEXTURES !== 'undefined' ? PANEL_TEXTURES.edfa : null, 0x181a1c, 0.45, 0.6);
+    const fwdmGroup = build1UUnit('fwdm', yFWDM, typeof PANEL_TEXTURES !== 'undefined' ? PANEL_TEXTURES.fwdm : null, 0xd0d5da, 0.35, 0.55);
+    const oltGroup  = build1UUnit('olt',  yOLT,  typeof PANEL_TEXTURES !== 'undefined' ? PANEL_TEXTURES.c610 : null, 0x242a30, 0.45, 0.55);
+
+    g.add(edfaGroup);
+    g.add(fwdmGroup);
+    g.add(oltGroup);
+
+    // Left and Right 19" Vertical Rack Rails (mounting posts)
+    const railMat = mat(0x323a42, 0.6, 0.45);
+    [-1, 1].forEach(side => {
+      const rx = side * (chassisW / 2 + earW + 0.005);
+      const railH = 0.20; // spanning the 3U subrack
+      const rail = box(0.010, railH, 0.025, railMat, rx, (yOLT + yEDFA) / 2, fZ - 0.01);
+      g.add(rail);
+    });
+
+    // NOTE: Wiring / patch cords intentionally omitted so front bayfaces remain clearly visible
+    internalGroup.olt = g;
+    cabinetGroup.add(g);
+  }
+
+  // ── Rectifier: Huawei ETP4830-A1 (1U Embedded Telecom DC Power System) ──
+  {
+    const g = new THREE.Group();
+    const uH = 0.0436;         // 1U standard height = 43.6mm
+    const chassisW = 0.442;    // 19" standard chassis body = 442mm
+    const earW = 0.020;        // 19" rack ear flange width = 20mm
+    const eqD = 0.255;         // Huawei ETP4830-A1 chassis depth = 255mm
+    const yRect = 0.035;       // 1U position in subrack above OLT & below DC-PDB
+    const fZ = frontZ - 0.015; // front face Z coordinate
+    const cZ = fZ - eqD / 2;   // chassis center Z
+
+    // 1. Main Metal Body Chassis (black telecom steel)
+    const bodyMat = mat(0x181a1d, 0.7, 0.45);
+    const body = box(chassisW, uH - 0.002, eqD, bodyMat, X, yRect, cZ);
+    g.add(body);
+
+    const edgeGeo = new THREE.EdgesGeometry(new THREE.BoxGeometry(chassisW, uH - 0.002, eqD));
+    const edgeLine = new THREE.LineSegments(edgeGeo, new THREE.LineBasicMaterial({
+      color: 0x4a545e,
+      transparent: true,
+      opacity: 0.6
+    }));
+    edgeLine.position.set(X, yRect, cZ);
+    g.add(edgeLine);
+
+    // 2. 19-Inch Left & Right Rack Mounting Ears with M6 Screws
+    const earMat = mat(0x283038, 0.65, 0.45);
+    const screwMat = mat(0xd4dce4, 0.85, 0.25);
+    [-1, 1].forEach(side => {
+      const earX = side * (chassisW / 2 + earW / 2);
+      const ear = box(earW, uH, 0.005, earMat, earX, yRect, fZ - 0.0025);
+      g.add(ear);
+
+      [-0.012, 0.012].forEach(sy => {
+        const screw = box(0.007, 0.007, 0.003, screwMat, earX, yRect + sy, fZ + 0.001);
+        g.add(screw);
+        const notch = box(0.005, 0.0015, 0.001, mat(0x222222, 0.9, 0.1), earX, yRect + sy, fZ + 0.0026);
+        g.add(notch);
+      });
+    });
+
+    // 3. Front Bayface Texture Plane (Huawei ETP4830-A1 Real Faceplate)
+    if (typeof PANEL_TEXTURES !== 'undefined' && PANEL_TEXTURES.etp4830) {
+      const tex = new THREE.TextureLoader().load(PANEL_TEXTURES.etp4830);
+      tex.minFilter = THREE.LinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      tex.generateMipmaps = true;
+
+      const faceGeo = new THREE.PlaneGeometry(chassisW, uH - 0.002);
+      const faceMat = new THREE.MeshStandardMaterial({
+        map: tex,
+        roughness: 0.35,
+        metalness: 0.15,
+        side: THREE.FrontSide
+      });
+      const faceMesh = new THREE.Mesh(faceGeo, faceMat);
+      faceMesh.position.set(X, yRect, fZ + 0.001);
+      g.add(faceMesh);
+
+      // Bezel border
+      const bezelGeo = new THREE.EdgesGeometry(faceGeo);
+      const bezelLine = new THREE.LineSegments(bezelGeo, new THREE.LineBasicMaterial({
+        color: 0x11161a,
+        transparent: true,
+        opacity: 0.8
+      }));
+      bezelLine.position.set(X, yRect, fZ + 0.0015);
+      g.add(bezelLine);
+    }
+
+    // 4. Transparent Safety Flip-Cover for AC Input Terminal (Item 1 on far left)
+    const acCoverMat = new THREE.MeshStandardMaterial({
+      color: 0xe8f0f8,
+      transparent: true,
+      opacity: 0.42,
+      roughness: 0.15,
+      metalness: 0.1
+    });
+    const acCoverX = -chassisW / 2 + 0.024;
+    const acCover = box(0.040, uH * 0.90, 0.014, acCoverMat, acCoverX, yRect, fZ + 0.008);
+    g.add(acCover);
+    const acCoverEdge = new THREE.LineSegments(
+      new THREE.EdgesGeometry(new THREE.BoxGeometry(0.040, uH * 0.90, 0.014)),
+      new THREE.LineBasicMaterial({ color: 0x8899aa, transparent: true, opacity: 0.7 })
+    );
+    acCoverEdge.position.set(acCoverX, yRect, fZ + 0.008);
+    g.add(acCoverEdge);
+
+    // 5. Screw-cap Fuses (Items 4 & 5: LOAD & BATT fuses on right side)
+    const fuseCapMat = mat(0x181a1d, 0.8, 0.35);
+    const fuseCoords = [
+      [chassisW * 0.28, yRect + 0.009],  // (5) Battery fuse top
+      [chassisW * 0.25, yRect - 0.008],  // (4) Load fuse 1
+      [chassisW * 0.31, yRect - 0.008],  // (4) Load fuse 2
+    ];
+    fuseCoords.forEach(([fx, fy]) => {
+      const fuseMesh = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.0055, 0.0055, 0.005, 16),
+        fuseCapMat
+      );
+      fuseMesh.rotation.x = Math.PI / 2;
+      fuseMesh.position.set(fx, fy, fZ + 0.0035);
+      g.add(fuseMesh);
+    });
+
+    // 6. Quick-Connect DC Output Sockets (Item 6: LOAD1, LOAD2, BATT on far right)
+    const dcPlugMat = mat(0xf0f3f6, 0.3, 0.7);
+    for (let p = 0; p < 3; p++) {
+      const py = yRect + 0.010 - p * 0.010;
+      const px = chassisW * 0.40;
+      const plug = box(0.022, 0.007, 0.004, dcPlugMat, px, py, fZ + 0.003);
+      g.add(plug);
+    }
+
+    // 19" Vertical Rack Rail extension for Rectifier
+    const railMat = mat(0x323a42, 0.6, 0.45);
+    [-1, 1].forEach(side => {
+      const rx = side * (chassisW / 2 + earW + 0.005);
+      const rail = box(0.010, uH + 0.02, 0.025, railMat, rx, yRect, fZ - 0.01);
+      g.add(rail);
+    });
+
+    // NOTE: Wiring intentionally omitted as requested ("ยังไม่ต้องทำ wirring")
+    internalGroup.power = g;
+    cabinetGroup.add(g);
+  }
+
+  // ── DC-PDB: 2U DC Power Distribution Subrack (Topmost Rack Position) ──
+  {
+    const g = new THREE.Group();
+    const pdbH = 0.088;        // 2U standard height = 88mm
+    const chassisW = 0.442;    // 19" standard chassis body = 442mm
+    const earW = 0.020;        // 19" rack ear flange width = 20mm
+    const pdbD = 0.220;        // subrack depth = 220mm
+    const yPDB = 0.190;        // topmost subrack position
+    const fZ = frontZ - 0.015; // front face Z coordinate
+    const cZ = fZ - pdbD / 2;  // chassis center Z
+
+    // 1. Main Metal Body Chassis (dark purple-grey powder-coated steel matching photo)
+    const bodyMat = mat(0x2d3038, 0.65, 0.45);
+    const body = box(chassisW, pdbH - 0.002, pdbD, bodyMat, X, yPDB, cZ);
+    g.add(body);
+
+    const edgeGeo = new THREE.EdgesGeometry(new THREE.BoxGeometry(chassisW, pdbH - 0.002, pdbD));
+    const edgeLine = new THREE.LineSegments(edgeGeo, new THREE.LineBasicMaterial({
+      color: 0x4a545e,
+      transparent: true,
+      opacity: 0.6
+    }));
+    edgeLine.position.set(X, yPDB, cZ);
+    g.add(edgeLine);
+
+    // 2. 19-Inch Left & Right Rack Mounting Ears with M6 Screws
+    const earMat = mat(0x283038, 0.65, 0.45);
+    const screwMat = mat(0xd4dce4, 0.85, 0.25);
+    [-1, 1].forEach(side => {
+      const earX = side * (chassisW / 2 + earW / 2);
+      const ear = box(earW, pdbH, 0.005, earMat, earX, yPDB, fZ - 0.0025);
+      g.add(ear);
+
+      [-0.030, 0.030].forEach(sy => {
+        const screw = box(0.007, 0.007, 0.003, screwMat, earX, yPDB + sy, fZ + 0.001);
+        g.add(screw);
+        const notch = box(0.005, 0.0015, 0.001, mat(0x222222, 0.9, 0.1), earX, yPDB + sy, fZ + 0.0026);
+        g.add(notch);
+      });
+    });
+
+    // 3. Front Bayface Texture Plane (Photo-Real DC-PDB: Breakers, SPDs, Busbars)
+    if (typeof PANEL_TEXTURES !== 'undefined' && PANEL_TEXTURES.dcpdb) {
+      const tex = new THREE.TextureLoader().load(PANEL_TEXTURES.dcpdb);
+      tex.minFilter = THREE.LinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      tex.generateMipmaps = true;
+
+      const faceGeo = new THREE.PlaneGeometry(chassisW, pdbH - 0.002);
+      const faceMat = new THREE.MeshStandardMaterial({
+        map: tex,
+        roughness: 0.38,
+        metalness: 0.12,
+        side: THREE.FrontSide
+      });
+      const faceMesh = new THREE.Mesh(faceGeo, faceMat);
+      faceMesh.position.set(X, yPDB, fZ + 0.001);
+      g.add(faceMesh);
+
+      // Bezel border
+      const bezelGeo = new THREE.EdgesGeometry(faceGeo);
+      const bezelLine = new THREE.LineSegments(bezelGeo, new THREE.LineBasicMaterial({
+        color: 0x11161a,
+        transparent: true,
+        opacity: 0.8
+      }));
+      bezelLine.position.set(X, yPDB, fZ + 0.0015);
+      g.add(bezelLine);
+    }
+
+    // 4. Physical 3D Highlights
+    // SOCKET Module on the far left: Blue Indicator LED
+    const blueLedMat = mat(0x0088ff, 0.2, 0.8, 0x0088ff, 1.0);
+    const sockLed = box(0.006, 0.006, 0.003, blueLedMat, -chassisW * 0.44, yPDB + 0.022, fZ + 0.004);
+    g.add(sockLed);
+
+    // Green Indicator Flags on Surge Protection Devices (SPDs)
+    const spdGreenMat = mat(0x00cc44, 0.2, 0.9, 0x00ff44, 0.6);
+    [-0.108, -0.092].forEach(sx => {
+      const spdFlag = box(0.010, 0.007, 0.002, spdGreenMat, sx, yPDB + 0.012, fZ + 0.004);
+      g.add(spdFlag);
+    });
+
+    // 6x Blue Toggle Levers (NDB2-63 distribution branches) slightly protruding
+    const blueLeverMat = mat(0x0072d6, 0.4, 0.6);
+    for (let b = 0; b < 6; b++) {
+      const bx = 0.062 + b * 0.018;
+      const lever = box(0.008, 0.015, 0.005, blueLeverMat, bx, yPDB - 0.004, fZ + 0.004);
+      g.add(lever);
+    }
+
+    // Lower Metallic Busbar / Comb Plate Guard
+    const busbarMat = mat(0xb8c2cc, 0.8, 0.25);
+    const busbar = box(chassisW * 0.86, 0.010, 0.004, busbarMat, 0.01, yPDB - pdbH / 2 + 0.010, fZ + 0.004);
+    g.add(busbar);
+
+    // 19" Vertical Rack Rail extension for DC-PDB
+    const railMat = mat(0x323a42, 0.6, 0.45);
+    [-1, 1].forEach(side => {
+      const rx = side * (chassisW / 2 + earW + 0.005);
+      const rail = box(0.010, pdbH + 0.02, 0.025, railMat, rx, yPDB, fZ - 0.01);
+      g.add(rail);
+    });
+
+    // NOTE: Wiring intentionally omitted as requested ("ยังไม่ต้องทำ wirring")
+    internalGroup.pdb = g;
+    cabinetGroup.add(g);
+  }
+
+  // ── Cooling Fans (Roof Intake / Exhaust Tray) ──
+  {
+    const g = new THREE.Group();
+    const yBase = 0.310;
+    const h = U * 0.8;
+    const m = box(IW, h, ID * 0.65,
+      mat(0x111111, 0.7, 0.4, 0x001100, 0.1),
+      X, yBase + h / 2, -0.02);
+    g.add(m);
+    const fmm = mat(0x222222, 0.8, 0.3, 0x002200, 0.05);
+    [-0.12, 0.12].forEach(fx => {
+      const fr = new THREE.Mesh(new THREE.TorusGeometry(0.025, 0.006, 6, 16), fmm);
+      fr.rotation.x = Math.PI / 2;
+      fr.position.set(fx, yBase + h / 2, -0.02);
+      g.add(fr);
+    });
+    internalGroup.fan = g;
+    cabinetGroup.add(g);
+  }
+
+  // ── Ground Busbar System & Yellow-Green Equipment Ground Wiring ──
+  {
+    const g = new THREE.Group();
+
+    // 1. Solid Copper Ground Busbar (Left Inner Wall beside 19" Rack)
+    const barW = 0.024;           // 24mm wide
+    const barT = 0.006;           // 6mm thick solid copper
+    const barL = 0.480;           // 480mm long
+    const barX = -HALF.W + 0.026; // mounted on left inner wall (-0.274m)
+    const barY = -0.010;          // vertical center aligned with subrack
+    const barZ = 0.165;           // positioned alongside 19" rack uprights (slightly recessed behind front face)
+    const barFaceX = barX + barT / 2; // -0.271 (front face of busbar facing +X into cabinet)
+
+    const fZ = frontZ - 0.015;
+    const earFrontZ = fZ + 0.001; // 0.1935 (front surface of 19" rack equipment mounting ears)
+    const eqEarX = -0.231;        // center of left 19" rack mounting ear (-0.221 to -0.241)
+
+    const copperMat = new THREE.MeshStandardMaterial({
+      color: 0xcd7f32,
+      metalness: 0.88,
+      roughness: 0.22
+    });
+
+    const busbar = box(barT, barL, barW, copperMat, barX, barY, barZ);
+    g.add(busbar);
+
+    const busbarEdge = new THREE.LineSegments(
+      new THREE.EdgesGeometry(new THREE.BoxGeometry(barT, barL, barW)),
+      new THREE.LineBasicMaterial({ color: 0x8b4513, transparent: true, opacity: 0.7 })
+    );
+    busbarEdge.position.set(barX, barY, barZ);
+    g.add(busbarEdge);
+
+    // Red Standoff Insulators (ฉนวนลูกถ้วยสีแดงทรงกระบอก top & bottom)
+    const isolatorMat = mat(0xaa1818, 0.45, 0.4);
+    [-0.210, 0.210].forEach(iy => {
+      const isolator = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.012, 0.012, 0.016, 16),
+        isolatorMat
+      );
+      isolator.rotation.z = Math.PI / 2;
+      isolator.position.set(barX - 0.010, barY + iy, barZ);
+      g.add(isolator);
+      const bolt = box(0.006, 0.008, 0.008, mat(0xd4dce4, 0.9, 0.2), barX - 0.020, barY + iy, barZ);
+      g.add(bolt);
+    });
+
+    // Right Side Ground Bar (Matching site photo Image 2 on right wall)
+    const rBarX = HALF.W - 0.026;
+    const rBarL = 0.320;
+    const rBarY = -0.050;
+    const rBusbar = box(barT, rBarL, barW, copperMat, rBarX, rBarY, barZ);
+    g.add(rBusbar);
+    [-0.120, 0.120].forEach(iy => {
+      const isolator = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.012, 0.012, 0.016, 16),
+        isolatorMat
+      );
+      isolator.rotation.z = Math.PI / 2;
+      isolator.position.set(rBarX + 0.010, rBarY + iy, barZ);
+      g.add(isolator);
+    });
+
+    // 2. Ring Terminal Lug & Ground Hardware Materials
+    const screwMat = mat(0xe2e8f0, 0.95, 0.15);       // chrome/stainless Phillips screw & washer
+    const tinnedLugMat = mat(0xd4dce4, 0.9, 0.2);     // tin-plated copper ring eyelet (หางปลากลม)
+    const lugBootGreen = mat(0x009e3e, 0.4, 0.55);    // green vinyl crimp boot sleeve
+    const lugBootYellow = mat(0xf5b700, 0.4, 0.55);   // yellow vinyl crimp boot sleeve
+    const redTorqueMat = mat(0xd61818, 0.3, 0.7);     // red QC torque seal paint line across screw
+
+    // Procedural Ground Symbol (⏚) texture on yellow square plate (ตรงตามรูป Image 2)
+    const gndSignCanvas = document.createElement('canvas');
+    gndSignCanvas.width = 128; gndSignCanvas.height = 128;
+    const sctx = gndSignCanvas.getContext('2d');
+    sctx.fillStyle = '#ffcc00';
+    sctx.fillRect(0, 0, 128, 128);
+    sctx.strokeStyle = '#000000';
+    sctx.lineWidth = 8;
+    sctx.strokeRect(6, 6, 116, 116);
+    sctx.beginPath();
+    sctx.arc(64, 64, 46, 0, Math.PI * 2);
+    sctx.stroke();
+    sctx.beginPath();
+    sctx.moveTo(64, 30); sctx.lineTo(64, 68);
+    sctx.moveTo(38, 68); sctx.lineTo(90, 68);
+    sctx.moveTo(46, 78); sctx.lineTo(82, 78);
+    sctx.moveTo(54, 88); sctx.lineTo(74, 88);
+    sctx.stroke();
+    const gndSignTex = new THREE.CanvasTexture(gndSignCanvas);
+    const gndSignMat = new THREE.MeshStandardMaterial({ map: gndSignTex, roughness: 0.3, metalness: 0.1 });
+
+    // Function to build a 3D Ring Terminal Lug (หางปลาแบบกลม) with screw, washer, red torque mark, and insulated boot
+    function addRingLug(pos, normal = 'z', bootDir = [-1, 0, 0], bootColor = 'green') {
+      const [x, y, z] = pos;
+      
+      // Flat Ring Eyelet (แผ่นหางปลากลมชุบดีบุก)
+      const ring = new THREE.Mesh(new THREE.CylinderGeometry(0.0055, 0.0055, 0.0008, 16), tinnedLugMat);
+      if (normal === 'z') {
+        ring.rotation.x = Math.PI / 2;
+        ring.position.set(x, y, z);
+      } else if (normal === 'x') {
+        ring.rotation.z = Math.PI / 2;
+        ring.position.set(x, y, z);
+      }
+      g.add(ring);
+
+      // Pan-head Screw & Washer (สกรู M5/M6 และแหวนรอง)
+      const washer = new THREE.Mesh(new THREE.CylinderGeometry(0.0048, 0.0048, 0.0006, 16), screwMat);
+      const head = new THREE.Mesh(new THREE.CylinderGeometry(0.0036, 0.0036, 0.0020, 16), screwMat);
+      if (normal === 'z') {
+        washer.rotation.x = Math.PI / 2;
+        washer.position.set(x, y, z + 0.0007);
+        head.rotation.x = Math.PI / 2;
+        head.position.set(x, y, z + 0.0020);
+
+        // Red QC torque seal paint line across screw head
+        const redPaint = box(0.009, 0.0012, 0.0004, redTorqueMat, x, y, z + 0.0032);
+        redPaint.rotation.z = Math.PI / 4;
+        g.add(redPaint);
+      } else if (normal === 'x') {
+        washer.rotation.z = Math.PI / 2;
+        washer.position.set(x + 0.0007, y, z);
+        head.rotation.z = Math.PI / 2;
+        head.position.set(x + 0.0020, y, z);
+
+        // Red QC torque seal paint line across screw head in Y-Z plane
+        const redPaint = box(0.0004, 0.0012, 0.009, redTorqueMat, x + 0.0032, y, z);
+        redPaint.rotation.x = Math.PI / 4;
+        g.add(redPaint);
+      }
+      g.add(washer);
+      g.add(head);
+
+      // Insulated Crimp Boot Sleeve (ปลอกฉนวนหางปลา เขียว/เหลือง)
+      const bMat = (bootColor === 'yellow') ? lugBootYellow : lugBootGreen;
+      const boot = new THREE.Mesh(new THREE.CylinderGeometry(0.0026, 0.0032, 0.012, 12), bMat);
+      const bx = x + bootDir[0] * 0.007;
+      const by = y + bootDir[1] * 0.007;
+      const bz = z + bootDir[2] * 0.007;
+      boot.position.set(bx, by, bz);
+      const dirVec = new THREE.Vector3(...bootDir).normalize();
+      boot.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dirVec);
+      g.add(boot);
+    }
+
+    // 10 terminal screw studs with Ring Lugs on Left Ground Bar
+    const termY = [];
+    for (let t = 0; t < 10; t++) {
+      const ty = barY + 0.190 - t * 0.042;
+      termY.push(ty);
+    }
+
+    // Yellow Ground Symbol (⏚) on Left Ground Bar (matching site photo)
+    const barSign = new THREE.Mesh(new THREE.PlaneGeometry(0.016, 0.016), gndSignMat);
+    barSign.rotation.y = Math.PI / 2;
+    barSign.position.set(barFaceX + 0.001, termY[0] + 0.030, barZ);
+    g.add(barSign);
+
+    // 6 terminal screw studs on Right Ground Bar
+    for (let t = 0; t < 6; t++) {
+      const ty = rBarY + 0.120 - t * 0.048;
+      addRingLug([rBarX - 0.001, ty, barZ], 'x', [-0.3, 0, 1], (t % 2 === 0 ? 'yellow' : 'green'));
+    }
+
+    // 3. Grounding Wire Procedural Material (Authentic Green & Yellow Helical Stripes)
+    const gndCanvas = document.createElement('canvas');
+    gndCanvas.width = 64; gndCanvas.height = 64;
+    const gctx = gndCanvas.getContext('2d');
+    gctx.fillStyle = '#388e3c'; // vivid green
+    gctx.fillRect(0, 0, 64, 64);
+    gctx.fillStyle = '#ffeb3b'; // bright yellow helical stripes
+    for (let i = -64; i < 128; i += 16) {
+      gctx.beginPath();
+      gctx.moveTo(i, 0);
+      gctx.lineTo(i + 12, 64);
+      gctx.lineTo(i + 20, 64);
+      gctx.lineTo(i + 8, 0);
+      gctx.closePath();
+      gctx.fill();
+    }
+    const gndTex = new THREE.CanvasTexture(gndCanvas);
+    gndTex.wrapS = THREE.RepeatWrapping;
+    gndTex.wrapT = THREE.RepeatWrapping;
+    gndTex.repeat.set(1, 16);
+
+    const gndWireMat = new THREE.MeshStandardMaterial({
+      map: gndTex,
+      roughness: 0.35,
+      metalness: 0.12
+    });
+
+    const heavyGndMat = mat(0x183818, 0.5, 0.5); // dark main earth cable
+
+    // Helper to generate True Standard wire identification tag texture
+    function makeWireTagTexture(fm, to) {
+      const c = document.createElement('canvas');
+      c.width = 256; c.height = 128;
+      const tctx = c.getContext('2d');
+      tctx.fillStyle = '#ffffff';
+      tctx.fillRect(0, 0, 256, 128);
+      tctx.strokeStyle = '#cccccc';
+      tctx.lineWidth = 4;
+      tctx.strokeRect(4, 4, 248, 120);
+      // True red branding bar
+      tctx.fillStyle = '#e60000';
+      tctx.fillRect(8, 8, 8, 112);
+      tctx.font = 'bold 24px Arial, sans-serif';
+      tctx.fillText('true', 186, 112);
+      // Wire identification text
+      tctx.fillStyle = '#0f172a';
+      tctx.font = 'bold 19px "Courier New", monospace';
+      tctx.fillText('FM: ' + fm, 24, 44);
+      tctx.fillText('TO: ' + to, 24, 78);
+      const tex = new THREE.CanvasTexture(c);
+      tex.minFilter = THREE.LinearFilter;
+      return tex;
+    }
+
+    // Helper to build 3D curved ground wire tube solidly connecting Equipment Ear to Ground Bar
+    function addEquipGroundConnection(equipY, barTermIdx, labelFm, labelTo, bootColor = 'green', isBattery = false) {
+      const equipX = isBattery ? -0.261 : eqEarX;
+      const equipZ = earFrontZ + 0.001; // exactly on front face of mounting ear
+      const barY = termY[barTermIdx];
+      const barLugPos = [barFaceX + 0.001, barY, barZ];
+
+      // 1. Shiny Grounding Mounting Plate on Equipment Ear (แผ่นแถบกราวด์ชุบดีบุกบนปีกยึด)
+      const earPlate = box(0.016, 0.024, 0.0008, mat(0xd4dce4, 0.85, 0.3), equipX, equipY, equipZ - 0.0004);
+      g.add(earPlate);
+
+      // 2. Ring Lug at Equipment Ear (หางปลาแบบกลมฝั่งปีกอุปกรณ์ พร้อมสกรู แหวน และแต้มสีแดง QC)
+      addRingLug([equipX, equipY, equipZ], 'z', [-1, 0.2, 0], bootColor);
+
+      // 3. Yellow Ground Symbol Sticker (⏚) directly above ground screw on the ear
+      const gndSign = new THREE.Mesh(new THREE.PlaneGeometry(0.011, 0.011), gndSignMat);
+      gndSign.position.set(equipX + 0.001, equipY + 0.017, equipZ + 0.0006);
+      g.add(gndSign);
+
+      // 4. Ring Lug at Ground Bar End (หางปลาฝั่งแท่งบาร์กราวด์)
+      addRingLug(barLugPos, 'x', [0.2, 0, 1], bootColor);
+
+      // 5. Continuous 3D Curved Yellow-Green Ground Wire Tube from Equipment Ear to Ground Bar
+      const startPt = [equipX - 0.009, equipY + 0.001, equipZ];
+      const pt1 = [equipX - 0.018, equipY + 0.002, equipZ - 0.012];
+      const pt2 = [-0.255, equipY + 0.003, equipZ - 0.024];
+      const pt3 = [-0.268, (equipY + barY) / 2, barZ + 0.016];
+      const pt4 = [barFaceX + 0.016, barY, barZ + 0.008];
+      const endPt = [barFaceX + 0.003, barY, barZ + 0.002];
+
+      const allPoints = isBattery ? [
+        [equipX - 0.005, equipY + 0.008, equipZ],
+        [-0.268, equipY + 0.030, equipZ - 0.015],
+        [-0.269, (equipY + barY) / 2, barZ + 0.015],
+        [barFaceX + 0.014, barY, barZ + 0.008],
+        endPt
+      ] : [startPt, pt1, pt2, pt3, pt4, endPt];
+
+      const curve = new THREE.CatmullRomCurve3(allPoints.map(p => new THREE.Vector3(...p)));
+      const tubeGeo = new THREE.TubeGeometry(curve, 28, 0.0024, 8, false);
+      const tubeMesh = new THREE.Mesh(tubeGeo, gndWireMat);
+      g.add(tubeMesh);
+
+      // 6. White Label Flag Tag (ป้ายชื่อสาย True standard พร้อมข้อความและโลโก้)
+      const tagTex = makeWireTagTexture(labelFm, labelTo);
+      const tagGeo = new THREE.PlaneGeometry(0.024, 0.012);
+      const tagMat = new THREE.MeshStandardMaterial({
+        map: tagTex,
+        roughness: 0.25,
+        metalness: 0.05,
+        side: THREE.DoubleSide
+      });
+      const tagMesh = new THREE.Mesh(tagGeo, tagMat);
+      const tagX = isBattery ? -0.266 : (equipX - 0.016);
+      const tagY = equipY + 0.006;
+      const tagZ = equipZ - 0.014;
+      tagMesh.position.set(tagX, tagY, tagZ);
+      tagMesh.rotation.y = -Math.PI / 6;
+      g.add(tagMesh);
+
+      // Clear nylon cable tie around wire and tag
+      const tie = box(0.002, 0.013, 0.006, mat(0xe8ecef, 0.3, 0.7), tagX + 0.001, tagY, tagZ);
+      g.add(tie);
+    }
+
+    // ──────────────────────────────────────────
+    // Equipment Ground Connections with Ring Lugs at Both Ends:
+    // Solidly physically connecting equipment ears to Master Ground Bar
+    // ──────────────────────────────────────────
+
+    // 1. DC-PDB Ground (2U Subrack) -> Ground Bar [0] (ty ~ 0.180)
+    addEquipGroundConnection(0.190, 0, 'DC-PDB', 'MASTER GND', 'green');
+
+    // 2. Huawei ETP4830-A1 Rectifier AC PE Terminal -> Ground Bar [3] (ty ~ 0.054)
+    addEquipGroundConnection(0.035, 3, 'ETP4830-PE', 'MASTER GND', 'green');
+
+    // 3. ZTE ZXA10 C610 OLT Ground Screw (Left Ear) -> Ground Bar [6] (ty ~ -0.072)
+    // Matches photo Image 2: "ZTE C610 Ground"
+    addEquipGroundConnection(-0.120, 6, 'ZTE C610 OLT', 'MASTER GND', 'green');
+
+    // 4. FWDM Unit Frame Ground -> Ground Bar [7] (ty ~ -0.114)
+    addEquipGroundConnection(-0.170, 7, 'FWDM UNIT', 'MASTER GND', 'yellow');
+
+    // 5. MOSSMAN EDFA Ground Screw (Left Ear) -> Ground Bar [8] (ty ~ -0.156)
+    addEquipGroundConnection(-0.220, 8, 'MOSSMAN EDFA', 'MASTER GND', 'green');
+
+    // 6. Upper Lithium Battery (Battery 2) BMS Ground Lug -> Ground Bar [9] (ty ~ -0.198)
+    addEquipGroundConnection(-0.328, 9, 'BATT 2 (UPPER)', 'MASTER GND', 'yellow', true);
+
+    // 7. Lower Lithium Battery (Battery 1) BMS Ground Lug -> Ground Bar [9] lower stud
+    addEquipGroundConnection(-0.445, 9, 'BATT 1 (LOWER)', 'MASTER GND', 'yellow', true);
+
+    // 8. Main Cabinet Earth Ground (Heavy Main Conductor to Earth Pit)
+    addRingLug([barFaceX + 0.001, termY[9] - 0.030, barZ], 'x', [0, -1, 0], 'yellow');
+    const earthPoints = [
+      [barFaceX, termY[9] - 0.030, barZ],
+      [-0.270, -0.320, 0.175],
+      [-0.260, -0.440, 0.180],
+      [-0.200, -HALF.H + 0.028, frontZ - 0.050]
+    ];
+    const earthCurve = new THREE.CatmullRomCurve3(earthPoints.map(p => new THREE.Vector3(...p)));
+    const earthMesh = new THREE.Mesh(new THREE.TubeGeometry(earthCurve, 20, 0.0045, 8, false), heavyGndMat);
+    g.add(earthMesh);
+    const earthTag = box(0.022, 0.010, 0.001, mat(0xf8fafc, 0.2, 0.8), -0.230, -0.360, 0.180);
+    g.add(earthTag);
+
+    // 9. Flexible Front Door Ground Strap (Braided Earth Jumper with Ring Lugs at Both Ends)
+    const doorBraidMat = mat(0xa8b0b8, 0.85, 0.25);
+    addRingLug([-HALF.W + 0.012, -0.100, HALF.D - 0.010], 'z', [0, 0, 1], 'green');
+    addRingLug([-HALF.W + 0.025, -0.100, HALF.D + 0.035], 'z', [0, 0, -1], 'green');
+    const doorStrapCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(-HALF.W + 0.012, -0.100, HALF.D - 0.010),
+      new THREE.Vector3(-HALF.W + 0.004, -0.105, HALF.D + 0.015),
+      new THREE.Vector3(-HALF.W + 0.025, -0.100, HALF.D + 0.035)
+    ]);
+    const doorStrapMesh = new THREE.Mesh(
+      new THREE.TubeGeometry(doorStrapCurve, 12, 0.0020, 6, false),
+      doorBraidMat
+    );
+    g.add(doorStrapMesh);
+
+    internalGroup.ground = g;
+    cabinetGroup.add(g);
+  }
+
+  // Point light inside
+  pointLightInside.position.set(0, 0, 0);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  DOOR TOGGLE
+// ═══════════════════════════════════════════════════════════
+function toggleDoor(which) {
+  doorState[which] = !doorState[which];
+  updateToggle('tog-' + which, doorState[which]);
+
+  if (which === 'front') {
+    frontDoor._targetY = doorState.front ? -Math.PI / 3 : 0;
+    // Dim/brighten inside light
+    pointLightInside._targetIntensity = doorState.front ? 0.6 : 0.0;
+  } else {
+    sideDoor._targetY = doorState.side ? Math.PI * 0.4 : 0;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  COMPONENT TOGGLE
+// ═══════════════════════════════════════════════════════════
+function toggleComp(which) {
+  compState[which] = !compState[which];
+  updateToggle('tog-' + which, compState[which]);
+  if (internalGroup[which]) {
+    internalGroup[which].visible = compState[which];
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  CABINET COLOR
+// ═══════════════════════════════════════════════════════════
+function setCabColor(hexStr, swatchEl) {
+  document.querySelectorAll('.color-swatch').forEach(el => el.classList.remove('active'));
+  swatchEl.classList.add('active');
+  const hexNum = parseInt(hexStr.replace('#', ''), 16);
+  cabinetGroup.traverse(obj => {
+    if (obj.isMesh && obj.material && obj.material.color) {
+      // Only update shell-like materials (skip internals)
+      const c = obj.material.color;
+      const origR = c.r, origG = c.g, origB = c.b;
+      // Distinguish cabinet shell by approximate grey hue
+      if (origR > 0.5 && origG > 0.5 && origB > 0.5 && Math.abs(origR - origG) < 0.15) {
+        obj.material.color.setHex(hexNum);
+      }
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+//  VIEW PRESETS
+// ═══════════════════════════════════════════════════════════
+const views = {
+  default:  { pos: [1.5, 1.0, 2.0],   look: [0, 0.1, 0] },
+  front:    { pos: [0, 0.1, 2.2],      look: [0, 0.1, 0] },
+  odf:      { pos: [0.95, 0.14, 0.0],  look: [0.24, 0.14, 0.0] },
+  ground:   { pos: [-0.44, 0.02, 0.40], look: [-0.25, 0.00, 0.17] },
+  pdb:      { pos: [0, 0.19, 0.82],    look: [0, 0.19, 0] },
+  rect:     { pos: [0, 0.035, 0.85],   look: [0, 0.035, 0] },
+  subrack:  { pos: [0, -0.16, 0.95],   look: [0, -0.16, 0] },
+  batt:     { pos: [0, -0.38, 0.95],   look: [0, -0.38, 0] },
+  left:     { pos: [-2.0, 0.5, 0.5],  look: [0, 0.1, 0] },
+  right:    { pos: [2.0, 0.5, 0.5],   look: [0, 0.1, 0] },
+  iso:      { pos: [1.8, 1.5, 1.8],   look: [0, 0.0, 0] },
+  top:      { pos: [0, 2.2, 0.25],    look: [0, 0.0, 0] },
+  bottom:   { pos: [0, -1.8, 1.25],   look: [0, -0.45, 0] },
+};
+
+function setView(name) {
+  document.querySelectorAll('.btn-pill').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+
+  // If viewing ODF, ensure side door is swung open
+  if (name === 'odf' && !doorState.side) {
+    toggleDoor('side');
+  }
+
+  const v = views[name];
+  targetCam = { x: v.pos[0], y: v.pos[1], z: v.pos[2] };
+  targetLook = { x: v.look[0], y: v.look[1], z: v.look[2] };
+}
+
+// ═══════════════════════════════════════════════════════════
+//  AUTO ROTATE
+// ═══════════════════════════════════════════════════════════
+function toggleAutoRotate() {
+  autoRotate = !autoRotate;
+  controls.autoRotate = autoRotate;
+  updateToggle('tog-rotate', autoRotate);
+}
+function setRotateSpeed(val) {
+  controls.autoRotateSpeed = parseFloat(val);
+  document.getElementById('speedVal').textContent = parseFloat(val).toFixed(1);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SPEC COLLAPSE
+// ═══════════════════════════════════════════════════════════
+function toggleSpec(header) {
+  header.classList.toggle('open');
+  const body = header.nextElementSibling;
+  body.classList.toggle('open');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  TOGGLE UI HELPER
+// ═══════════════════════════════════════════════════════════
+function updateToggle(id, on) {
+  const el = document.getElementById(id);
+  if (el) el.classList.toggle('on', on);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  RESIZE
+// ═══════════════════════════════════════════════════════════
+function onResize() {
+  const container = document.getElementById('canvas-area');
+  const W = container.clientWidth, H = container.clientHeight;
+  camera.aspect = W / H;
+  camera.updateProjectionMatrix();
+  renderer.setSize(W, H);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  ANIMATION LOOP
+// ═══════════════════════════════════════════════════════════
+const lerpFactor = 0.05;
+
+function animate() {
+  animReq = requestAnimationFrame(animate);
+
+  // Camera lerp to target
+  if (targetCam) {
+    camera.position.lerp(new THREE.Vector3(targetCam.x, targetCam.y, targetCam.z), lerpFactor);
+    controls.target.lerp(new THREE.Vector3(targetLook.x, targetLook.y, targetLook.z), lerpFactor);
+    if (camera.position.distanceTo(new THREE.Vector3(targetCam.x, targetCam.y, targetCam.z)) < 0.005) {
+      targetCam = null;
+    }
+  }
+
+  // Door angle lerp
+  if (frontDoor._targetY !== undefined) {
+    frontDoor.rotation.y += (frontDoor._targetY - frontDoor.rotation.y) * 0.08;
+  }
+  if (sideDoor._targetY !== undefined) {
+    sideDoor.rotation.y += (sideDoor._targetY - sideDoor.rotation.y) * 0.08;
+  }
+
+  // Inside light lerp
+  if (pointLightInside._targetIntensity !== undefined) {
+    pointLightInside.intensity += (pointLightInside._targetIntensity - pointLightInside.intensity) * 0.1;
+  }
+
+  controls.update();
+  renderer.render(scene, camera);
+
+  // FPS
+  fpsFrames++;
+  const now = performance.now();
+  if (now - fpsLast >= 1000) {
+    document.getElementById('fps').textContent = fpsFrames + ' fps';
+    fpsFrames = 0;
+    fpsLast = now;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  CAD & EQUIPMENT MODAL LOGIC
+// ═══════════════════════════════════════════════════════════
+function openCadModal() {
+  const m = document.getElementById('cad-modal');
+  if (m) m.classList.add('active');
+}
+function closeCadModal(e) {
+  if (e) e.stopPropagation();
+  const m = document.getElementById('cad-modal');
+  if (m) m.classList.remove('active');
+}
+function switchCadTab(tab) {
+  document.querySelectorAll('.modal-tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.cad-tab-content').forEach(c => c.classList.remove('active'));
+  const btn = document.getElementById('tab-btn-' + tab);
+  const content = document.getElementById('tab-' + tab);
+  if (btn) btn.classList.add('active');
+  if (content) content.classList.add('active');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  BOOT
+// ═══════════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  // Initialize _targetY to match initial open state
+  init();
+  frontDoor._targetY = -Math.PI / 3;
+  sideDoor._targetY  = Math.PI * 0.4;
+  pointLightInside._targetIntensity = 0.6;
+});
+</script>
+</body>
+</html>

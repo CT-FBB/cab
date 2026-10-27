@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Cabinet Equipment Manager — จัดการอุปกรณ์โทรคมนาคมทุกชิ้นใน Cabinet" />
+  <title>Cabinet — Equipment Manager</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body>
+
+<!-- ══════════════════════ NAVBAR ══════════════════════ -->
+<nav class="nav" id="mainNav">
+  <div class="container nav__inner">
+    <a href="index.html" class="nav__logo">
+      <span class="nav__logo-icon">🗄️</span> Cabinet
+    </a>
+    <ul class="nav__links">
+      <li><a href="index.html"            class="nav__link active">หน้าแรก</a></li>
+      <li><a href="pages/equipment.html"  class="nav__link">อุปกรณ์</a></li>
+      <li><a href="pages/cabinet-detail.html" class="nav__link">Cabinet</a></li>
+      <li><a href="pages/cabinet-3d.html"  class="nav__link">🗄️ 3D View</a></li>
+      <li><a href="#categories"           class="nav__link">หมวดหมู่</a></li>
+    </ul>
+    <div class="nav__actions">
+      <button class="nav__btn" id="searchOpen" title="ค้นหา (⌘K)">🔍</button>
+      <button class="nav__btn" id="darkToggle"  title="สลับธีม">🌙</button>
+    </div>
+  </div>
+</nav>
+
+<!-- ══════════════════════ SEARCH OVERLAY ══════════════════════ -->
+<div class="search-overlay" id="searchOverlay">
+  <div class="search-box">
+    <div class="search-input-wrap">
+      <span>🔍</span>
+      <input type="text" class="search-input" id="searchInput" placeholder="ค้นหาอุปกรณ์, Cabinet, รุ่น..." autocomplete="off" />
+      <button id="searchClose" style="background:none;border:none;color:var(--text-secondary);font-size:1rem;cursor:pointer;">✕</button>
+    </div>
+    <div class="search-results" id="searchResults"></div>
+    <div style="padding:10px 20px;font-size:0.72rem;color:var(--text-tertiary);border-top:1px solid var(--border);">
+      กด <kbd style="background:var(--border);padding:1px 6px;border-radius:4px;">⌘K</kbd> เพื่อเปิด &nbsp;·&nbsp; <kbd style="background:var(--border);padding:1px 6px;border-radius:4px;">Esc</kbd> เพื่อปิด
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ HERO ══════════════════════ -->
+<section class="hero" id="hero">
+  <div class="hero__grid-bg"></div>
+  <div class="hero__gradient"></div>
+  <div class="hero__content">
+    <div class="hero__eyebrow">✦ Telecom Infrastructure Platform</div>
+    <h1>Cabinet Equipment<br/>Manager</h1>
+    <p class="hero__sub">จัดการอุปกรณ์โทรคมนาคมทุกชิ้นใน Cabinet อย่างมืออาชีพ — OLT, CPE, NodeB, IPRAN และอื่นๆ ในที่เดียว</p>
+    <div class="hero__actions">
+      <a href="pages/equipment.html" class="btn btn--primary">ดูอุปกรณ์ทั้งหมด →</a>
+      <a href="#categories"          class="btn btn--ghost">เรียนรู้เพิ่มเติม</a>
+    </div>
+  </div>
+  <div class="hero__scroll">
+    <span>↓</span>
+    เลื่อนลง
+  </div>
+</section>
+
+<!-- ══════════════════════ STATS BAR ══════════════════════ -->
+<section class="stats-bar">
+  <div class="container">
+    <div class="stats-grid">
+      <div class="stat-item">
+        <div class="stat-value" data-count="1200">0</div>
+        <div class="stat-label">🌐 OLT ทั้งหมด</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" data-count="45000">0</div>
+        <div class="stat-label">📡 CPE / ONT</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" data-count="320">0</div>
+        <div class="stat-label">📶 NodeB / BTS</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" data-count="180">0</div>
+        <div class="stat-label">🔄 IPRAN Nodes</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════ CATEGORIES ══════════════════════ -->
+<section class="section" id="categories">
+  <div class="container">
+    <div class="section-header">
+      <div class="eyebrow">หมวดหมู่อุปกรณ์</div>
+      <h2>อุปกรณ์ทุกประเภท<br/>ในระบบโทรคมนาคม</h2>
+      <p>ครอบคลุมตั้งแต่ Access Layer จนถึง Core Network ทุกชั้นของ Network Architecture</p>
+    </div>
+    <div class="category-grid">
+
+      <div class="category-card animate-in animate-in--delay-1" onclick="location.href='pages/equipment.html?filter=olt'">
+        <div class="category-card__icon">🌐</div>
+        <div class="category-card__title">OLT</div>
+        <div class="category-card__sub">Optical Line Terminal</div>
+        <div class="category-card__desc">Huawei, ZTE, Fiberhome, GCOM, Dasan — GPON / XGS-PON</div>
+        <div class="category-card__arrow">→</div>
+      </div>
+
+      <div class="category-card animate-in animate-in--delay-1" onclick="location.href='pages/equipment.html?filter=cpe'">
+        <div class="category-card__icon">📡</div>
+        <div class="category-card__title">CPE / ONT</div>
+        <div class="category-card__sub">Customer Premises Equipment</div>
+        <div class="category-card__desc">T626Pro, F688, GN542VF — รองรับ GPON / XGS-PON</div>
+        <div class="category-card__arrow">→</div>
+      </div>
+
+      <div class="category-card animate-in animate-in--delay-2" onclick="location.href='pages/equipment.html?filter=nodeb'">
+        <div class="category-card__icon">📶</div>
+        <div class="category-card__title">NodeB / BTS</div>
+        <div class="category-card__sub">Base Station Equipment</div>
+        <div class="category-card__desc">4G LTE / 5G NR RAN Equipment — Huawei, Nokia, Ericsson</div>
+        <div class="category-card__arrow">→</div>
+      </div>
+
+      <div class="category-card animate-in animate-in--delay-2" onclick="location.href='pages/equipment.html?filter=ipran'">
+        <div class="category-card__icon">🔄</div>
+        <div class="category-card__title">IPRAN</div>
+        <div class="category-card__sub">IP Radio Access Network</div>
+        <div class="category-card__desc">Core &amp; Aggregation Routers — Huawei CX600, Cisco ASR</div>
+        <div class="category-card__arrow">→</div>
+      </div>
+
+      <div class="category-card animate-in animate-in--delay-3" onclick="location.href='pages/equipment.html?filter=switch'">
+        <div class="category-card__icon">🔀</div>
+        <div class="category-card__title">Switch / Router</div>
+        <div class="category-card__sub">Core Networking Equipment</div>
+        <div class="category-card__desc">AGN, AN, PN, DN Tiers — Cisco, Huawei, Juniper</div>
+        <div class="category-card__arrow">→</div>
+      </div>
+
+      <div class="category-card animate-in animate-in--delay-3" onclick="location.href='pages/equipment.html?filter=power'">
+        <div class="category-card__icon">🔋</div>
+        <div class="category-card__title">Power / Battery</div>
+        <div class="category-card__sub">Power Systems</div>
+        <div class="category-card__desc">Rectifiers, UPS, Battery Banks — Megmeet, Emerson, Dong-ah</div>
+        <div class="category-card__arrow">→</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════ RECENT CABINETS ══════════════════════ -->
+<section class="section" style="padding-top:0">
+  <div class="container">
+    <div class="section-header">
+      <div class="eyebrow">Recent Cabinets</div>
+      <h2>Cabinet ล่าสุด</h2>
+      <p>ข้อมูล Cabinet ทั่วประเทศ — คลิกที่แถวเพื่อดูรายละเอียด</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Cabinet ID</th>
+            <th>Location</th>
+            <th>จังหวัด</th>
+            <th>OLT Count</th>
+            <th>CPE Count</th>
+            <th>NodeB</th>
+            <th>สถานะ</th>
+            <th>อัปเดตล่าสุด</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-href="pages/cabinet-detail.html">
+            <td><span class="table-id">BKK-CAB-001</span></td>
+            <td>Lat Phrao Data Center</td>
+            <td>กรุงเทพฯ</td>
+            <td><strong>12</strong></td>
+            <td>4,820</td>
+            <td>4</td>
+            <td><span class="badge badge--active">Active</span></td>
+            <td style="color:var(--text-secondary)">27 ต.ค. 2026</td>
+          </tr>
+          <tr data-href="pages/cabinet-detail.html">
+            <td><span class="table-id">BKK-CAB-002</span></td>
+            <td>Bang Na Exchange</td>
+            <td>กรุงเทพฯ</td>
+            <td><strong>8</strong></td>
+            <td>3,210</td>
+            <td>2</td>
+            <td><span class="badge badge--active">Active</span></td>
+            <td style="color:var(--text-secondary)">26 ต.ค. 2026</td>
+          </tr>
+          <tr data-href="pages/cabinet-detail.html">
+            <td><span class="table-id">CNX-CAB-001</span></td>
+            <td>Chiang Mai Central Hub</td>
+            <td>เชียงใหม่</td>
+            <td><strong>6</strong></td>
+            <td>2,140</td>
+            <td>3</td>
+            <td><span class="badge badge--active">Active</span></td>
+            <td style="color:var(--text-secondary)">25 ต.ค. 2026</td>
+          </tr>
+          <tr data-href="pages/cabinet-detail.html">
+            <td><span class="table-id">CNX-CAB-002</span></td>
+            <td>Nimman Road Node</td>
+            <td>เชียงใหม่</td>
+            <td><strong>4</strong></td>
+            <td>1,680</td>
+            <td>1</td>
+            <td><span class="badge badge--maintenance">Maintenance</span></td>
+            <td style="color:var(--text-secondary)">24 ต.ค. 2026</td>
+          </tr>
+          <tr data-href="pages/cabinet-detail.html">
+            <td><span class="table-id">KKN-CAB-001</span></td>
+            <td>Khon Kaen City Center</td>
+            <td>ขอนแก่น</td>
+            <td><strong>5</strong></td>
+            <td>1,920</td>
+            <td>2</td>
+            <td><span class="badge badge--active">Active</span></td>
+            <td style="color:var(--text-secondary)">24 ต.ค. 2026</td>
+          </tr>
+          <tr data-href="pages/cabinet-detail.html">
+            <td><span class="table-id">HYI-CAB-001</span></td>
+            <td>Hat Yai Main Exchange</td>
+            <td>สงขลา</td>
+            <td><strong>7</strong></td>
+            <td>2,560</td>
+            <td>2</td>
+            <td><span class="badge badge--active">Active</span></td>
+            <td style="color:var(--text-secondary)">23 ต.ค. 2026</td>
+          </tr>
+          <tr data-href="pages/cabinet-detail.html">
+            <td><span class="table-id">PTY-CAB-001</span></td>
+            <td>Pattaya Beach Node</td>
+            <td>ชลบุรี</td>
+            <td><strong>3</strong></td>
+            <td>980</td>
+            <td>1</td>
+            <td><span class="badge badge--inactive">Inactive</span></td>
+            <td style="color:var(--text-secondary)">20 ต.ค. 2026</td>
+          </tr>
+          <tr data-href="pages/cabinet-detail.html">
+            <td><span class="table-id">NRT-CAB-001</span></td>
+            <td>Nakhon Ratchasima Hub</td>
+            <td>นครราชสีมา</td>
+            <td><strong>9</strong></td>
+            <td>3,400</td>
+            <td>3</td>
+            <td><span class="badge badge--active">Active</span></td>
+            <td style="color:var(--text-secondary)">22 ต.ค. 2026</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:20px;text-align:center;">
+      <a href="pages/cabinet-detail.html" class="btn btn--outline btn--sm">ดู Cabinet ทั้งหมด →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════ FOOTER ══════════════════════ -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="nav__logo" style="display:inline-flex;text-decoration:none;margin-bottom:8px;">
+          <span class="nav__logo-icon">🗄️</span> Cabinet
+        </div>
+        <p>ระบบจัดการอุปกรณ์โทรคมนาคมครบวงจร สำหรับ OLT, CPE, NodeB, IPRAN และระบบ Power ทั่วประเทศ</p>
+      </div>
+      <div class="footer-col">
+        <h4>อุปกรณ์</h4>
+        <ul class="footer-links">
+          <li><a href="pages/equipment.html?filter=olt">OLT</a></li>
+          <li><a href="pages/equipment.html?filter=cpe">CPE / ONT</a></li>
+          <li><a href="pages/equipment.html?filter=nodeb">NodeB</a></li>
+          <li><a href="pages/equipment.html?filter=ipran">IPRAN</a></li>
+          <li><a href="pages/equipment.html?filter=power">Power</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Cabinet</h4>
+        <ul class="footer-links">
+          <li><a href="pages/cabinet-detail.html">รายละเอียด</a></li>
+          <li><a href="#">แผนที่</a></li>
+          <li><a href="#">รายงาน</a></li>
+          <li><a href="#">ประวัติการบำรุงรักษา</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>ระบบ</h4>
+        <ul class="footer-links">
+          <li><a href="#">Dashboard</a></li>
+          <li><a href="#">การแจ้งเตือน</a></li>
+          <li><a href="#">API Docs</a></li>
+          <li><a href="#">ตั้งค่า</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div>Copyright © 2026 Cabinet Equipment Manager. All rights reserved.</div>
+      <div style="display:flex;gap:16px;">
+        <a href="#" style="color:var(--text-tertiary)">นโยบายความเป็นส่วนตัว</a>
+        <a href="#" style="color:var(--text-tertiary)">ข้อกำหนดการใช้งาน</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/js/app.js"></script>
+</body>
+</html>

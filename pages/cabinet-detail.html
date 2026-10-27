@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Cabinet Detail — BKK-CAB-001 Lat Phrao Data Center" />
+  <title>BKK-CAB-001 — Cabinet Detail</title>
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <style>
+    /* ── Extra styles for detail page ── */
+    .port-section { margin-bottom: 10px; }
+    .port-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-bottom: 5px;
+    }
+    .port-label strong { color: var(--text-primary); }
+
+    .equip-table th { font-size: 0.75rem; }
+    .equip-table td { font-size: 0.82rem; }
+
+    .spec-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px 16px;
+    }
+
+    .kpi-chips {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+    .kpi-chip {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px 18px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-md);
+      min-width: 90px;
+      text-align: center;
+    }
+    .kpi-chip .val { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); line-height: 1; }
+    .kpi-chip .lbl { font-size: 0.7rem; color: var(--text-secondary); margin-top: 4px; }
+
+    .tab-bar {
+      display: flex;
+      gap: 4px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+    .tab {
+      padding: 10px 18px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      transition: color var(--transition), border-color var(--transition);
+      background: none;
+      border-top: none;
+      border-left: none;
+      border-right: none;
+      font-family: inherit;
+    }
+    .tab:hover { color: var(--text-primary); }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .alert-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: var(--radius-md);
+      margin-bottom: 10px;
+      font-size: 0.85rem;
+    }
+    .alert-row--warn { background: rgba(255,159,10,0.1); border: 1px solid rgba(255,159,10,0.3); }
+    .alert-row--ok   { background: rgba(48,209,88,0.1);  border: 1px solid rgba(48,209,88,0.3);  }
+    .alert-row--err  { background: rgba(255,69,58,0.1);  border: 1px solid rgba(255,69,58,0.3);  }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════ NAVBAR ══════════════════════ -->
+<nav class="nav" id="mainNav">
+  <div class="container nav__inner">
+    <a href="../index.html" class="nav__logo">
+      <span class="nav__logo-icon">🗄️</span> Cabinet
+    </a>
+    <ul class="nav__links">
+      <li><a href="../index.html"       class="nav__link">หน้าแรก</a></li>
+      <li><a href="equipment.html"      class="nav__link">อุปกรณ์</a></li>
+      <li><a href="cabinet-detail.html" class="nav__link active">Cabinet</a></li>
+      <li><a href="../index.html#categories" class="nav__link">หมวดหมู่</a></li>
+    </ul>
+    <div class="nav__actions">
+      <button class="nav__btn" id="searchOpen" title="ค้นหา">🔍</button>
+      <button class="nav__btn" id="darkToggle"  title="สลับธีม">🌙</button>
+    </div>
+  </div>
+</nav>
+
+<!-- ══════════════════════ SEARCH OVERLAY ══════════════════════ -->
+<div class="search-overlay" id="searchOverlay">
+  <div class="search-box">
+    <div class="search-input-wrap">
+      <span>🔍</span>
+      <input type="text" class="search-input" id="searchInput" placeholder="ค้นหาอุปกรณ์..." autocomplete="off" />
+      <button id="searchClose" style="background:none;border:none;color:var(--text-secondary);font-size:1rem;cursor:pointer;">✕</button>
+    </div>
+    <div class="search-results" id="searchResults"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════ PAGE HEADER ══════════════════════ -->
+<div class="page-header">
+  <div class="container">
+    <div class="breadcrumb">
+      <a href="../index.html">หน้าแรก</a>
+      <span>/</span>
+      <span>Cabinet</span>
+      <span>/</span>
+      <span>BKK-CAB-001</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <h1 style="margin:0">BKK-CAB-001</h1>
+      <span class="badge badge--active" style="font-size:0.82rem;padding:5px 14px;">Active</span>
+    </div>
+    <p style="margin-top:6px">📍 Lat Phrao Data Center, Bangkok · อัปเดตล่าสุด: 27 ต.ค. 2026 เวลา 08:34</p>
+  </div>
+</div>
+
+<!-- ══════════════════════ MAIN CONTENT ══════════════════════ -->
+<section class="section section--sm">
+  <div class="container">
+
+    <!-- Cabinet Header Card -->
+    <div class="cabinet-header-card">
+      <div class="cabinet-header-icon">🏢</div>
+      <div class="cabinet-header-info">
+        <h2>Lat Phrao Data Center</h2>
+        <div class="meta">
+          Cabinet ID: <strong>BKK-CAB-001</strong> &nbsp;·&nbsp;
+          Region: <strong>Bangkok Central</strong> &nbsp;·&nbsp;
+          Tier: <strong>3</strong> &nbsp;·&nbsp;
+          ผู้รับผิดชอบ: <strong>ทีม NOC กรุงเทพฯ</strong>
+        </div>
+        <div class="kpi-chips">
+          <div class="kpi-chip">
+            <span class="val">12</span>
+            <span class="lbl">OLT Units</span>
+          </div>
+          <div class="kpi-chip">
+            <span class="val">4,820</span>
+            <span class="lbl">Active CPE</span>
+          </div>
+          <div class="kpi-chip">
+            <span class="val">4</span>
+            <span class="lbl">NodeB</span>
+          </div>
+          <div class="kpi-chip">
+            <span class="val">98.7%</span>
+            <span class="lbl">Uptime</span>
+          </div>
+          <div class="kpi-chip">
+            <span class="val">32°C</span>
+            <span class="lbl">Avg Temp</span>
+          </div>
+        </div>
+      </div>
+      <div class="cabinet-header-actions">
+        <button class="btn btn--primary btn--sm">✏️ แก้ไข</button>
+        <button class="btn btn--outline btn--sm">📄 Export</button>
+        <button class="btn btn--ghost btn--sm">🔔 แจ้งเตือน</button>
+      </div>
+    </div>
+
+    <!-- ── Alerts ── -->
+    <div class="alert-row alert-row--warn">
+      ⚠️ <div><strong>OLT MA5800-X17 #3</strong> — อุณหภูมิ PON Board สูงกว่าปกติ (72°C) — กรุณาตรวจสอบระบบระบายความร้อน</div>
+    </div>
+    <div class="alert-row alert-row--ok" style="margin-bottom:20px;">
+      ✅ <div><strong>Backup Power</strong> — UPS และ Rectifier ทำงานปกติ · Battery Health: 94%</div>
+    </div>
+
+    <!-- ── Tabs ── -->
+    <div class="tab-bar">
+      <button class="tab active" data-tab="overview">ภาพรวม</button>
+      <button class="tab" data-tab="equipment">อุปกรณ์</button>
+      <button class="tab" data-tab="ports">Port Utilization</button>
+      <button class="tab" data-tab="timeline">ประวัติ</button>
+    </div>
+
+    <!-- ══ TAB: Overview ══ -->
+    <div class="tab-panel active" id="tab-overview">
+      <div class="info-cards">
+        <!-- Physical Specs -->
+        <div class="info-card">
+          <div class="info-card__title">🏗️ ข้อมูลทางกายภาพ</div>
+          <div class="info-row"><span class="label">ขนาด Rack</span><span class="value">42U Standard</span></div>
+          <div class="info-row"><span class="label">จำนวน Rack</span><span class="value">8 ตู้</span></div>
+          <div class="info-row"><span class="label">พื้นที่ใช้งาน</span><span class="value">320 U / 336 U</span></div>
+          <div class="info-row"><span class="label">น้ำหนักรวม</span><span class="value">≈ 1,240 kg</span></div>
+          <div class="info-row"><span class="label">อุณหภูมิ</span><span class="value" style="color:var(--orange)">32°C (สูง)</span></div>
+          <div class="info-row"><span class="label">ความชื้น</span><span class="value">48% RH</span></div>
+          <div class="info-row"><span class="label">ระบบระบายความร้อน</span><span class="value">Precision AC ×4</span></div>
+        </div>
+
+        <!-- Power Info -->
+        <div class="info-card">
+          <div class="info-card__title">⚡ ระบบไฟฟ้า</div>
+          <div class="info-row"><span class="label">แหล่งจ่ายไฟหลัก</span><span class="value">MEA 3-Phase</span></div>
+          <div class="info-row"><span class="label">กำลังไฟ</span><span class="value">120 kW / 150 kW</span></div>
+          <div class="info-row"><span class="label">Rectifier</span><span class="value">Megmeet EMC2250 ×8</span></div>
+          <div class="info-row"><span class="label">Battery Backup</span><span class="value">48V / 400Ah VRLA</span></div>
+          <div class="info-row"><span class="label">Backup Time</span><span class="value">≈ 4 ชั่วโมง</span></div>
+          <div class="info-row"><span class="label">UPS</span><span class="value">Dong-ah 10KVA ×2</span></div>
+          <div class="info-row"><span class="label">Generator</span><span class="value">500 kVA (สำรอง)</span></div>
+        </div>
+
+        <!-- Network Info -->
+        <div class="info-card">
+          <div class="info-card__title">🌐 ระบบเครือข่าย</div>
+          <div class="info-row"><span class="label">Uplink หลัก</span><span class="value">2×100G Fiber</span></div>
+          <div class="info-row"><span class="label">IPRAN Router</span><span class="value">Huawei CX600-X8</span></div>
+          <div class="info-row"><span class="label">Core Switch</span><span class="value">Cisco C9500-40X ×2</span></div>
+          <div class="info-row"><span class="label">VLAN Count</span><span class="value">128 VLANs</span></div>
+          <div class="info-row"><span class="label">BGP Peers</span><span class="value">4 Peers</span></div>
+          <div class="info-row"><span class="label">IP Range</span><span class="value">10.238.12.0/22</span></div>
+          <div class="info-row"><span class="label">OLT Uplink</span><span class="value">10G × 24 Ports</span></div>
+        </div>
+      </div>
+    </div><!-- /tab-overview -->
+
+    <!-- ══ TAB: Equipment List ══ -->
+    <div class="tab-panel" id="tab-equipment">
+      <div class="table-wrap">
+        <table class="equip-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>ประเภท</th>
+              <th>รุ่น</th>
+              <th>ผู้ผลิต</th>
+              <th>Serial No.</th>
+              <th>Rack / Slot</th>
+              <th>PON Ports</th>
+              <th>CPE</th>
+              <th>สถานะ</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td><span class="badge badge--olt badge--cat">OLT</span></td>
+              <td><strong>MA5800-X17</strong></td>
+              <td>Huawei</td>
+              <td class="table-id">H25BKK00012</td>
+              <td>Rack-A · 1U</td>
+              <td>512</td>
+              <td>1,840</td>
+              <td><span class="badge badge--active">Active</span></td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td><span class="badge badge--olt badge--cat">OLT</span></td>
+              <td><strong>MA5800-X17</strong></td>
+              <td>Huawei</td>
+              <td class="table-id">H25BKK00013</td>
+              <td>Rack-A · 13U</td>
+              <td>512</td>
+              <td>1,620</td>
+              <td><span class="badge badge--active">Active</span></td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td><span class="badge badge--olt badge--cat">OLT</span></td>
+              <td><strong>MA5800-X17</strong></td>
+              <td>Huawei</td>
+              <td class="table-id">H25BKK00014</td>
+              <td>Rack-B · 1U</td>
+              <td>512</td>
+              <td>980</td>
+              <td><span class="badge badge--maintenance">Maintenance</span></td>
+            </tr>
+            <tr>
+              <td>4</td>
+              <td><span class="badge badge--olt badge--cat">OLT</span></td>
+              <td><strong>C320</strong></td>
+              <td>ZTE</td>
+              <td class="table-id">Z24BKK00088</td>
+              <td>Rack-B · 14U</td>
+              <td>256</td>
+              <td>380</td>
+              <td><span class="badge badge--active">Active</span></td>
+            </tr>
+            <tr>
+              <td>5</td>
+              <td><span class="badge badge--olt badge--cat">OLT</span></td>
+              <td><strong>AN5516-06</strong></td>
+              <td>Fiberhome</td>
+              <td class="table-id">FH23BKK00041</td>
+              <td>Rack-C · 1U</td>
+              <td>192</td>
+              <td>0</td>
+              <td><span class="badge badge--inactive">Inactive</span></td>
+            </tr>
+            <tr>
+              <td>6</td>
+              <td><span class="badge badge--ipran badge--cat">IPRAN</span></td>
+              <td><strong>CX600-X8</strong></td>
+              <td>Huawei</td>
+              <td class="table-id">H24BKK00200</td>
+              <td>Rack-D · 1U</td>
+              <td>—</td>
+              <td>—</td>
+              <td><span class="badge badge--active">Active</span></td>
+            </tr>
+            <tr>
+              <td>7</td>
+              <td><span class="badge badge--switch badge--cat">Switch</span></td>
+              <td><strong>Catalyst 9500</strong></td>
+              <td>Cisco</td>
+              <td class="table-id">C22BKK00301</td>
+              <td>Rack-D · 5U</td>
+              <td>—</td>
+              <td>—</td>
+              <td><span class="badge badge--active">Active</span></td>
+            </tr>
+            <tr>
+              <td>8</td>
+              <td><span class="badge badge--nodeb badge--cat">NodeB</span></td>
+              <td><strong>BBU5900</strong></td>
+              <td>Huawei</td>
+              <td class="table-id">H25BKK00500</td>
+              <td>Rack-E · 2U</td>
+              <td>—</td>
+              <td>—</td>
+              <td><span class="badge badge--active">Active</span></td>
+            </tr>
+            <tr>
+              <td>9</td>
+              <td><span class="badge badge--power badge--cat">Power</span></td>
+              <td><strong>EMC2250 ×8</strong></td>
+              <td>Megmeet</td>
+              <td class="table-id">MM24BKK00091</td>
+              <td>Rack-F · 2U</td>
+              <td>—</td>
+              <td>—</td>
+              <td><span class="badge badge--active">Active</span></td>
+            </tr>
+            <tr>
+              <td>10</td>
+              <td><span class="badge badge--power badge--cat">Power</span></td>
+              <td><strong>UPS 10KVA</strong></td>
+              <td>Dong-ah</td>
+              <td class="table-id">DA22BKK00055</td>
+              <td>Rack-F · 8U</td>
+              <td>—</td>
+              <td>—</td>
+              <td><span class="badge badge--active">Active</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div><!-- /tab-equipment -->
+
+    <!-- ══ TAB: Port Utilization ══ -->
+    <div class="tab-panel" id="tab-ports">
+      <div class="info-cards" style="grid-template-columns:repeat(2,1fr)">
+
+        <div class="info-card">
+          <div class="info-card__title">🌐 OLT Port Utilization</div>
+          <div class="port-section">
+            <div class="port-label"><span>MA5800-X17 #1</span><strong>1,840 / 2,048</strong></div>
+            <div class="progress-bar"><div class="progress-fill progress-fill--green" data-width="89"></div></div>
+          </div>
+          <div class="port-section">
+            <div class="port-label"><span>MA5800-X17 #2</span><strong>1,620 / 2,048</strong></div>
+            <div class="progress-bar"><div class="progress-fill" data-width="79"></div></div>
+          </div>
+          <div class="port-section">
+            <div class="port-label"><span>MA5800-X17 #3</span><span style="color:var(--orange)">980 / 2,048 ⚠️</span></div>
+            <div class="progress-bar"><div class="progress-fill progress-fill--orange" data-width="47"></div></div>
+          </div>
+          <div class="port-section">
+            <div class="port-label"><span>ZTE C320 #1</span><strong>380 / 1,024</strong></div>
+            <div class="progress-bar"><div class="progress-fill" data-width="37"></div></div>
+          </div>
+          <div class="port-section">
+            <div class="port-label"><span>FH AN5516-06</span><span style="color:var(--red)">0 / 768 ●</span></div>
+            <div class="progress-bar"><div class="progress-fill progress-fill--red" data-width="0"></div></div>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <div class="info-card__title">🔀 Switch Port Utilization</div>
+          <div class="port-section">
+            <div class="port-label"><span>Cisco C9500 Core-A</span><strong>36 / 40</strong></div>
+            <div class="progress-bar"><div class="progress-fill progress-fill--green" data-width="90"></div></div>
+          </div>
+          <div class="port-section">
+            <div class="port-label"><span>Cisco C9500 Core-B</span><strong>28 / 40</strong></div>
+            <div class="progress-bar"><div class="progress-fill" data-width="70"></div></div>
+          </div>
+          <div class="port-section">
+            <div class="port-label"><span>Huawei S5735 Agg-1</span><strong>42 / 48</strong></div>
+            <div class="progress-bar"><div class="progress-fill progress-fill--green" data-width="87"></div></div>
+          </div>
+          <div class="port-section">
+            <div class="port-label"><span>Huawei S5735 Agg-2</span><strong>31 / 48</strong></div>
+            <div class="progress-bar"><div class="progress-fill" data-width="64"></div></div>
+          </div>
+          <div class="port-section">
+            <div class="port-label"><span>OLT Uplink 10G</span><strong>20 / 24</strong></div>
+            <div class="progress-bar"><div class="progress-fill progress-fill--orange" data-width="83"></div></div>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <div class="info-card__title">⚡ Power Load</div>
+          <div class="port-section">
+            <div class="port-label"><span>Total Power Draw</span><strong>120 / 150 kW</strong></div>
+            <div class="progress-bar"><div class="progress-fill progress-fill--orange" data-width="80"></div></div>
+          </div>
+          <div class="port-section">
+            <div class="port-label"><span>Rectifier Capacity</span><strong>14 / 18 kW</strong></div>
+            <div class="progress-bar"><div class="progress-fill" data-width="77"></div></div>
+          </div>
+          <div class="port-section">
+            <div class="port-label"><span>Battery Health</span><strong>94%</strong></div>
+            <div class="progress-bar"><div class="progress-fill progress-fill--green" data-width="94"></div></div>
+          </div>
+          <div class="port-section">
+            <div class="port-label"><span>UPS Load</span><strong>6.2 / 10 kVA</strong></div>
+            <div class="progress-bar"><div class="progress-fill" data-width="62"></div></div>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <div class="info-card__title">🌡️ Temperature Zones</div>
+          <div class="port-section">
+            <div class="port-label"><span>Zone A (OLT Row)</span><span style="color:var(--orange)">38°C</span></div>
+            <div class="progress-bar"><div class="progress-fill progress-fill--orange" data-width="76"></div></div>
+          </div>
+          <div class="port-section">
+            <div class="port-label"><span>Zone B (Power Row)</span><strong>30°C</strong></div>
+            <div class="progress-bar"><div class="progress-fill progress-fill--green" data-width="60"></div></div>
+          </div>
+          <div class="port-section">
+            <div class="port-label"><span>Zone C (Switch Row)</span><strong>28°C</strong></div>
+            <div class="progress-bar"><div class="progress-fill progress-fill--green" data-width="56"></div></div>
+          </div>
+          <div class="port-section">
+            <div class="port-label"><span>Zone D (NodeB)</span><strong>34°C</strong></div>
+            <div class="progress-bar"><div class="progress-fill" data-width="68"></div></div>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /tab-ports -->
+
+    <!-- ══ TAB: Timeline ══ -->
+    <div class="tab-panel" id="tab-timeline">
+      <div class="card-section">
+        <h3><span class="icon">🕐</span> ประวัติการบำรุงรักษา</h3>
+        <div class="timeline">
+
+          <div class="timeline-item">
+            <div class="timeline-date">27 ต.ค. 2026 · 08:34 น.</div>
+            <div class="timeline-title">🌡️ Alert: OLT #3 อุณหภูมิสูงผิดปกติ</div>
+            <div class="timeline-desc">PON Board ของ MA5800-X17 #3 วัดอุณหภูมิได้ 72°C ส่งแจ้งเตือนทีม NOC แล้ว</div>
+          </div>
+
+          <div class="timeline-item">
+            <div class="timeline-date">22 ต.ค. 2026 · 14:00 น.</div>
+            <div class="timeline-title">🔧 Preventive Maintenance — AC Unit #2</div>
+            <div class="timeline-desc">ซ่อมบำรุงและล้างแผ่นกรองอากาศ Precision AC Unit #2 ระยะเวลา 2 ชั่วโมง — ทีมช่าง: นายสมชาย</div>
+          </div>
+
+          <div class="timeline-item">
+            <div class="timeline-date">15 ต.ค. 2026 · 10:30 น.</div>
+            <div class="timeline-title">✅ OLT MA5800-X17 #2 — Firmware Upgrade สำเร็จ</div>
+            <div class="timeline-desc">อัปเกรด Firmware จาก V800R021C00SPC300 เป็น V800R021C00SPC500 ไม่มีการขัดข้อง</div>
+          </div>
+
+          <div class="timeline-item">
+            <div class="timeline-date">08 ต.ค. 2026 · 02:15 น.</div>
+            <div class="timeline-title">⚡ Power Outage — MEA ไฟดับ (45 นาที)</div>
+            <div class="timeline-desc">ไฟดับจากการไฟฟ้า UPS และ Generator ทำงานอัตโนมัติ บริการไม่ขัดข้อง ไฟกลับมา 03:00 น.</div>
+          </div>
+
+          <div class="timeline-item">
+            <div class="timeline-date">01 ต.ค. 2026 · 09:00 น.</div>
+            <div class="timeline-title">🔋 Battery Test — ผ่าน</div>
+            <div class="timeline-desc">ทดสอบประจุแบตเตอรี่ Backup สำเร็จ Battery Health: 94% คาดว่าจะเปลี่ยนใหม่ภายใน Q1 2027</div>
+          </div>
+
+          <div class="timeline-item">
+            <div class="timeline-date">20 ก.ย. 2026 · 13:00 น.</div>
+            <div class="timeline-title">🌐 เพิ่ม OLT ZTE C320 #1 เข้าระบบ</div>
+            <div class="timeline-desc">ติดตั้งและเปิดใช้งาน ZTE C320 #1 Rack-B Slot 14 รองรับ PON 256 Ports รองรับโซน Bang Khen</div>
+          </div>
+
+          <div class="timeline-item">
+            <div class="timeline-date">05 ก.ย. 2026 · 11:00 น.</div>
+            <div class="timeline-title">📦 Cabinet เปิดดำเนินการ (Commission)</div>
+            <div class="timeline-desc">Commission Cabinet BKK-CAB-001 เสร็จสมบูรณ์ ติดตั้งอุปกรณ์ครบถ้วนและทดสอบระบบทั้งหมดผ่าน</div>
+          </div>
+
+        </div>
+      </div>
+    </div><!-- /tab-timeline -->
+
+  </div>
+</section>
+
+<!-- ══════════════════════ FOOTER ══════════════════════ -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-bottom">
+      <div>Copyright © 2026 Cabinet Equipment Manager</div>
+      <div style="display:flex;gap:16px;">
+        <a href="../index.html" style="color:var(--text-tertiary)">← หน้าแรก</a>
+        <a href="equipment.html" style="color:var(--text-tertiary)">อุปกรณ์</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="../assets/js/app.js"></script>
+<script>
+  // Tab switching
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      const panel = document.getElementById('tab-' + tab.dataset.tab);
+      if (panel) {
+        panel.classList.add('active');
+        // Trigger progress bar animation when tab becomes visible
+        panel.querySelectorAll('.progress-fill[data-width]').forEach(b => {
+          const w = b.dataset.width;
+          b.style.width = '0%';
+          setTimeout(() => { b.style.width = w + '%'; }, 50);
+        });
+      }
+    });
+  });
+</script>
+</body>
+</html>
